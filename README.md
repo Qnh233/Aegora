@@ -1,24 +1,60 @@
 # Aegora
 
+[中文文档](./README_CN.md)
+
 **Enterprise Agent Control Plane & Stateless Runtime**
 
 Aegora is an enterprise-oriented platform for registering, governing, composing and operating AI agents, MCP tools, workflows and organizational skills. The repository is organized as a monorepo while keeping the control plane and data plane independently deployable.
 
 ## Architecture
 
+The diagram below describes the **target production topology**. PostgreSQL remains the source of truth; Redis, runtime-local caches and LiteLLM are operational layers that do not change that ownership model.
+
 ```text
-                         Aegora Control Plane
-                 Agent / Release / RBAC / MCP Registry
-                                |
-                         PostgreSQL truth
-                                |
-                    Runtime Context Resolver
-                                |
-                 Aegora Stateless Runtime Fleet
-                 /            |             \
-              MCP          Workflow       LLM Gateway
-                                           (LiteLLM)
+                           Aegora Control Plane
+                   Agent / Release / RBAC / Registry
+                                  |
+                                  v
+                            PostgreSQL
+                       Control Plane Facts
+                                  |
+                                  v
+                               Redis
+                    Config L2 / Events / Invalidation
+                                  |
+                    +-------------+-------------+
+                    |             |             |
+                    v             v             v
+               Runtime Pod 1 Runtime Pod 2 Runtime Pod 3
+                 L1 Cache      L1 Cache      L1 Cache
+                 MCP Pool      MCP Pool      MCP Pool
+                    |             |             |
+                    +-------------+-------------+
+                                  |
+                                  v
+                            LiteLLM Proxy
+                                  |
+                       Router / Retry / Fallback
+                                  |
+                                  v
+                           Model Providers
+                                  |
+                                  v
+                         Prompt / KV Cache
 ```
+
+### Runtime and cache hierarchy
+
+The runtime is stateless with respect to durable business/configuration truth, but it may keep **disposable acceleration state**:
+
+- **PostgreSQL — source of truth**: Agent drafts/releases, RBAC, capability state, MCP registrations, learning policies, audit records and other durable control-plane facts.
+- **Redis — shared L2 and event fabric (target)**: versioned runtime-context cache, invalidation/version events and other rebuildable shared state. Redis must never become the canonical configuration database.
+- **Runtime L1 — process-local hot cache**: resolved release/runtime contexts and bounded hot data. Versioned keys allow stale entries to stop matching after publish or policy changes.
+- **MCP pool — process-local reusable connections**: runtime pods may reuse MCP sessions/connections, while pool state remains disposable and rebuildable after restart.
+- **LiteLLM Proxy — central model gateway (target)**: provider routing, retry, fallback and quotas are centralized so Agent logic is not coupled to provider-specific SDKs.
+- **Prompt/KV cache — inference optimization (optional)**: a performance layer below model routing, never an authorization or business-state source.
+
+The intended configuration path is **PostgreSQL -> Redis L2 -> Runtime L1**. Publish, disable or policy changes advance a version and emit invalidation information; runtimes re-resolve on a miss/version change instead of relying on long TTLs for correctness.
 
 ### Design principles
 
@@ -28,6 +64,50 @@ Aegora is an enterprise-oriented platform for registering, governing, composing 
 - **Dynamic authorization**: every run intersects release capabilities with current actor permissions, tool status and MCP connection state.
 - **Capability-oriented integration**: MCP is the primary tool integration protocol; complex SOP/workflows are exposed as governed capabilities rather than leaking low-level APIs to the model.
 - **Centralized configuration**: both applications read the repository-root `.env` by default; real secrets must never be committed.
+
+## Governed data flywheel
+
+Aegora treats runtime experience as **candidate improvement material**, not as permission for an Agent to silently rewrite itself. The target loop is:
+
+```text
+Production Runs / Traces / Human Feedback
+                  |
+                  v
+      Evaluation + Failure Mining
+                  |
+                  v
+   Reflection / Skill Draft / Proposal
+                  |
+                  v
+ Policy Gate + Human Review + Audit Trail
+                  |
+          +-------+--------+
+          |                |
+          v                v
+   Versioned Skill     Agent/Prompt Change
+          |                |
+          +-------+--------+
+                  |
+                  v
+        Offline / Canary Evaluation
+                  |
+                  v
+        Publish New Version
+                  |
+                  v
+           New Production Runs
+```
+
+### Flywheel guardrails
+
+- **Separate evidence from executable change**: traces, feedback and evaluations may produce proposals, but proposals do not alter production behavior by themselves.
+- **Version everything promotable**: Skills, prompts, policies and Agent releases are immutable/versioned once published so decisions can be reproduced and rolled back.
+- **Policy before promotion**: per-Agent learning policy defines what may be learned automatically, what requires review and what is prohibited from entering the learning set.
+- **Quality gates**: candidate changes pass offline regression/evaluation and, where appropriate, canary rollout before becoming the new published version.
+- **Full lineage**: retain source run/evidence, evaluator result, proposal, reviewer/policy decision and resulting version for auditability.
+- **No authorization expansion through learning**: learned Skills/prompts cannot grant tools or scopes beyond the published release ceiling and current runtime authorization intersection.
+
+The current codebase already contains foundations for this design: immutable releases, runtime policy resolution, governance/audit boundaries, Skills and an existing reflection/Skill-draft path. The end-to-end automated flywheel, Redis L2 event fabric and central LiteLLM deployment remain **roadmap architecture until their corresponding implementation lands**.
 
 ## Repository layout
 
@@ -54,7 +134,8 @@ Aegora/
 │  ├─ architecture.md
 │  └─ migration.md
 ├─ .env.example            # canonical configuration template
-└─ README.md
+├─ README.md
+└─ README_CN.md
 ```
 
 ## Local development
@@ -97,6 +178,6 @@ Planned next steps:
 
 1. Add a Workflow Capability adapter and workflow registration UX.
 2. Introduce LiteLLM Proxy as the central LLM gateway and Langfuse tracing.
-3. Add L1/L2 configuration caching with versioned keys and event-driven invalidation only after measuring resolver/DB bottlenecks.
-4. Generalize the existing reflection/Skill-draft path into per-Agent learning policies and a governed data flywheel.
+3. Add Redis-backed L2 configuration caching plus version/event-driven invalidation, keeping runtime L1 caches disposable.
+4. Generalize the existing reflection/Skill-draft path into per-Agent learning policies, evaluation gates and the governed data flywheel described above.
 
