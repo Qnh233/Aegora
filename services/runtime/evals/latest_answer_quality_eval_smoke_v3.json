@@ -1,0 +1,24 @@
+{
+  "dataset": "real:legacy_router:eval_core_100.jsonl",
+  "total": 1,
+  "answer_scored": 1,
+  "judged": 1,
+  "grounded_rate": 1.0,
+  "hallucination_rate": 0.0,
+  "key_step_coverage": 1.0,
+  "answer_quality_score_avg": 5.0,
+  "answer_quality_pass_rate": 1.0,
+  "low_quality_rate": 0.0,
+  "judge_errors": 0,
+  "skipped": 0,
+  "cache": {},
+  "thresholds": {
+    "grounded_rate": ">= 0.97",
+    "hallucination_rate": "<= 0.03",
+    "key_step_coverage": ">= 0.90",
+    "answer_quality_score_avg": ">= 4.20",
+    "answer_quality_pass_rate": ">= 0.90",
+    "low_quality_rate": "<= 0.03"
+  },
+  "samples": []
+}

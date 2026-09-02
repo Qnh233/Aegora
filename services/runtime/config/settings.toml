@@ -1,0 +1,205 @@
+[app]
+name = "aegora-runtime"
+env_var = "APP_ENV"
+log_level_env_var = "APP_LOG_LEVEL"
+product_id_env_var = "APP_PRODUCT_ID"
+default_product_id = "aicoin"
+
+[deepseek]
+api_key_env_var = "LLM_GATEWAY_API_KEY"
+base_url_env_var = "LLM_GATEWAY_BASE_URL"
+default_base_url = "https://gateway.llmgtw.io/v1"
+chat_model_env_var = "LLM_GATEWAY_CHAT_MODEL"
+default_chat_model = "deepseek-v4-pro"
+fast_model_env_var = "LLM_GATEWAY_FAST_MODEL"
+default_fast_model = "deepseek-v4-flash"
+timeout_seconds_env_var = "LLM_GATEWAY_TIMEOUT_SECONDS"
+default_timeout_seconds = 30
+enable_thinking_env_var = "LLM_GATEWAY_ENABLE_THINKING"
+default_enable_thinking = false
+
+[strapi]
+base_url_env_var = "STRAPI_BASE_URL"
+api_token_env_var = "STRAPI_API_TOKEN"
+timeout_seconds_env_var = "STRAPI_TIMEOUT_SECONDS"
+default_timeout_seconds = 20
+
+[wecom_aibot]
+bot_id_env_var = "WECOM_AIBOT_ID"
+secret_env_var = "WECOM_AIBOT_SECRET"
+ws_url_env_var = "WECOM_AIBOT_WS_URL"
+default_ws_url = ""
+scene_env_var = "WECOM_AIBOT_SCENE"
+plug_version_env_var = "WECOM_AIBOT_PLUG_VERSION"
+reconnect_interval_ms_env_var = "WECOM_AIBOT_RECONNECT_INTERVAL_MS"
+default_reconnect_interval_ms = 1000
+max_reconnect_attempts_env_var = "WECOM_AIBOT_MAX_RECONNECT_ATTEMPTS"
+default_max_reconnect_attempts = -1
+heartbeat_interval_ms_env_var = "WECOM_AIBOT_HEARTBEAT_INTERVAL_MS"
+default_heartbeat_interval_ms = 30000
+request_timeout_ms_env_var = "WECOM_AIBOT_REQUEST_TIMEOUT_MS"
+default_request_timeout_ms = 10000
+
+[postgres]
+host_env_var = "PG_HOST"
+default_host = "127.0.0.1"
+port_env_var = "PG_PORT"
+default_port = 5432
+database_env_var = "PG_DATABASE"
+default_database = "aegora_runtime"
+user_env_var = "PG_USER"
+default_user = "aegora_runtime"
+password_env_var = "PG_PASSWORD"
+sslmode_env_var = "PG_SSLMODE"
+default_sslmode = "prefer"
+pool_min_size_env_var = "PG_POOL_MIN_SIZE"
+default_pool_min_size = 1
+pool_max_size_env_var = "PG_POOL_MAX_SIZE"
+default_pool_max_size = 10
+
+[embedding]
+provider_env_var = "EMBEDDING_PROVIDER"
+default_provider = "siliconflow"
+api_key_env_var = "EMBEDDING_API_KEY"
+base_url_env_var = "EMBEDDING_BASE_URL"
+default_base_url = "https://api.siliconflow.cn/v1"
+model_env_var = "EMBEDDING_MODEL"
+default_model = "BAAI/bge-m3"
+local_path_env_var = "EMBEDDING_LOCAL_PATH"
+default_local_path = ""
+dimension_env_var = "EMBEDDING_DIMENSION"
+default_dimension = 1024
+timeout_seconds_env_var = "EMBEDDING_TIMEOUT_SECONDS"
+default_timeout_seconds = 60
+batch_size_env_var = "EMBEDDING_BATCH_SIZE"
+default_batch_size = 8
+max_retries_env_var = "EMBEDDING_MAX_RETRIES"
+default_max_retries = 3
+max_length_env_var = "EMBEDDING_MAX_LENGTH"
+default_max_length = 1024
+enable_startup_warmup_env_var = "EMBEDDING_ENABLE_STARTUP_WARMUP"
+default_enable_startup_warmup = true
+
+[retrieval]
+fusion_method = "rrf"
+rrf_k = 60
+rrf_tie_break_source = "vector"
+top_k = 5
+candidate_k = 5
+min_score = 0.2
+
+[skills]
+enabled_env_var = "SKILLS_ENABLED"
+default_enabled = true
+candidate_k = 10
+max_injected = 1
+max_content_chars = 1000
+min_score = 0.58
+commercial_min_score = 0.60
+manual_boost = 0.03
+agent_penalty = 0.02
+product_boost = 0.02
+domain_boost = 0.03
+
+[database]
+schema = "public"
+embedding_dim = 1024
+embedding_model = "BAAI/bge-m3"
+preferred_text_search_config = "agentic_zh"
+fallback_text_search_config = "pg_catalog.simple"
+
+[collections.faq_content]
+owner = "strapi"
+strapi_endpoint = "/api/im-customer-service-knowledge-bases"
+pg_table = "faqs"
+sync_direction = "strapi_to_pg"
+needs_embedding = true
+description = "FAQ 内容源由 Strapi 管理，同步到 PG 后生成全文索引和向量。"
+
+[collections.skills_content]
+owner = "strapi"
+strapi_endpoint = "/api/im-customer-service-skills"
+pg_table = "skills"
+sync_direction = "strapi_to_pg"
+needs_embedding = true
+description = "Skill 经验内容由 Strapi 管理，同步到 PG 后生成向量参与检索和注入。"
+
+[collections.faq_embeddings]
+owner = "postgres"
+pg_table = "faq_embeddings"
+runtime = false
+description = "FAQ 向量表，直接由 Agent 写 PG/pgvector。"
+
+[collections.skill_embeddings]
+owner = "postgres"
+pg_table = "skill_embeddings"
+runtime = false
+description = "Skill 向量表，直接由 Agent 写 PG/pgvector。"
+
+[collections.chat_sessions]
+owner = "strapi"
+strapi_endpoint = "/api/agent-chat-sessions"
+runtime = true
+description = "会话元数据，运行时通过 Strapi API 写入 MySQL。"
+
+[collections.chat_messages]
+owner = "strapi"
+strapi_endpoint = "/api/agent-chat-messages"
+runtime = true
+description = "每轮对话、路由、证据和 Flow 快照，运行时通过 Strapi API 写入 MySQL。"
+
+[collections.message_feedback]
+owner = "strapi"
+strapi_endpoint = "/api/agent-message-feedbacks"
+runtime = true
+description = "回答反馈，运行时通过 Strapi API 写入 MySQL。"
+
+[collections.session_memories]
+owner = "postgres"
+pg_table = "user_memories"
+runtime = true
+description = "会话级偏好，暂时复用 user_memories 兼容表。"
+
+[collections.tool_logs]
+owner = "postgres"
+pg_table = "tool_logs"
+runtime = true
+description = "工具调用日志，运行时直接写 PG。"
+
+[collections.audit_logs]
+owner = "postgres"
+pg_table = "audit_logs"
+runtime = true
+description = "审计日志，运行时直接写 PG。"
+
+[agent]
+loop_mode_env_var = "AGENT_LOOP_MODE"
+default_loop_mode = "planner"
+max_iterations_env_var = "AGENT_MAX_ITERATIONS"
+default_max_iterations = 8
+timeout_seconds_env_var = "AGENT_TIMEOUT_SECONDS"
+default_timeout_seconds = 30
+token_budget_env_var = "AGENT_TOKEN_BUDGET"
+default_token_budget = 32000
+enable_llm_self_check_env_var = "AGENT_ENABLE_LLM_SELF_CHECK"
+default_enable_llm_self_check = false
+max_parallel_tool_calls_env_var = "AGENT_MAX_PARALLEL_TOOL_CALLS"
+default_max_parallel_tool_calls = 4
+
+[observability]
+pocoflow_db_path = "logs/pocoflow.db"
+log_dir = "logs"
+pocoflow_db_enabled_env_var = "POCOFLOW_DB_ENABLED"
+default_pocoflow_db_enabled = true
+file_log_enabled_env_var = "FILE_LOG_ENABLED"
+default_file_log_enabled = true
+instance_id_env_var = "INSTANCE_ID"
+default_instance_id = "local"
+
+[eval]
+core_path = "evals/eval_core_100.jsonl"
+retrieval_path = "evals/eval_retrieval_sample_300.jsonl"
+retrieval_holdout_path = "evals/eval_retrieval_holdout_300.jsonl"
+bad_feedback_path = "evals/eval_bad_feedback_100.jsonl"
+security_path = "evals/eval_security_50.jsonl"
+perf_seed_path = "evals/eval_perf_seed_100.jsonl"

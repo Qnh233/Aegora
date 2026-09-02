@@ -1,0 +1,17 @@
+{
+  "dataset": "real:legacy_router:eval_core_100.jsonl",
+  "total": 5,
+  "answer_scored": 5,
+  "judged": 5,
+  "grounded_rate": 1.0,
+  "hallucination_rate": 0.0,
+  "key_step_coverage": 1.0,
+  "judge_errors": 0,
+  "skipped": 0,
+  "thresholds": {
+    "grounded_rate": ">= 0.97",
+    "hallucination_rate": "<= 0.03",
+    "key_step_coverage": ">= 0.90"
+  },
+  "samples": []
+}

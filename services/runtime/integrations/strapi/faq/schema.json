@@ -1,0 +1,23 @@
+{
+  "kind": "collectionType",
+  "collectionName": "im_customer_service_knowledge_base",
+  "info": {
+    "singularName": "im-customer-service-knowledge-base",
+    "pluralName": "im-customer-service-knowledge-bases",
+    "displayName": "客服 FAQ"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "Title": {"type": "string"},
+    "FAQ": {"type": "text", "required": true},
+    "Response": {"type": "richtext", "required": true},
+    "Keywords": {"type": "text"},
+    "Intention": {"type": "string"},
+    "Category": {"type": "string"},
+    "UserSide": {"type": "boolean"},
+    "Response_Pic_App_URL": {"type": "text"},
+    "Response_Pic_Pc_URL": {"type": "text"}
+  }
+}

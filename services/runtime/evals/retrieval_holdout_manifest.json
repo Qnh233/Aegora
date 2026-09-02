@@ -1,0 +1,37 @@
+{
+  "output": "<runtime-root>/evals/eval_retrieval_holdout_300.jsonl",
+  "count": 300,
+  "random_seed": 20260609,
+  "development_set": "<runtime-root>/evals/eval_retrieval_sample_300.jsonl",
+  "development_faq_ids": 301,
+  "query_sources": {
+    "original_query": 244,
+    "alternate_query": 32,
+    "title_query": 24
+  },
+  "categories": {
+    "DCA": 5,
+    "PRO 版K线": 7,
+    "下载": 5,
+    "交易所相关": 5,
+    "信号预警": 3,
+    "功能设置": 25,
+    "套利工具": 11,
+    "实时盯盘": 5,
+    "实盘交易": 5,
+    "指标设置": 1,
+    "授权交易": 7,
+    "画线工具": 4,
+    "网格": 2,
+    "自定义指标": 13,
+    "自选": 1,
+    "语音预警": 1,
+    "预警": 6,
+    "未分类": 194
+  },
+  "isolation": {
+    "faq_id_overlap": 0,
+    "content_hash_overlap": 0,
+    "holdout_unique_content_hashes": 300
+  }
+}

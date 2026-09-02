@@ -1,0 +1,85 @@
+{
+  "kind": "collectionType",
+  "collectionName": "skill_experiences",
+  "info": {
+    "singularName": "skill",
+    "pluralName": "skills",
+    "displayName": "IM客服经验库",
+    "description": "im-customer-service-skill-experiences: Agent response experience injected on demand"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text",
+      "required": true
+    },
+    "content": {
+      "type": "text",
+      "required": true
+    },
+    "product_id": {
+      "type": "string"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "skill_type": {
+      "type": "enumeration",
+      "enum": ["guidance", "commercial", "workflow", "safety"],
+      "default": "guidance",
+      "required": true
+    },
+    "source": {
+      "type": "enumeration",
+      "enum": ["manual", "agent"],
+      "default": "manual",
+      "required": true
+    },
+    "lifecycle_status": {
+      "type": "enumeration",
+      "enum": ["draft", "active", "rejected", "archived"],
+      "default": "draft",
+      "required": true
+    },
+    "priority": {
+      "type": "integer",
+      "default": 0,
+      "required": true
+    },
+    "trigger_rules": {
+      "type": "json",
+      "default": {}
+    },
+    "metadata": {
+      "type": "json",
+      "default": {}
+    },
+    "version": {
+      "type": "integer",
+      "default": 1,
+      "required": true
+    },
+    "content_hash": {
+      "type": "string",
+      "required": true
+    },
+    "reviewed_by": {
+      "type": "string"
+    },
+    "reviewed_at": {
+      "type": "datetime"
+    }
+  }
+}

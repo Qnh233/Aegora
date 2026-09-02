@@ -1,0 +1,40 @@
+{
+  "duplicate_groups": 3,
+  "duplicate_rows": 6,
+  "redundant_rows": 3,
+  "groups": [
+    {
+      "content_hash": "dcb34705ec32bec8b8a5cf4f05d77f8d91d910e3a676fa0eacab1bfa5b9c30fc",
+      "duplicate_count": 2,
+      "strapi_ids": [
+        710,
+        726
+      ],
+      "title": "电脑怎么投屏，有没有操作视频",
+      "faq": "电脑怎么投屏，有没有操作视频",
+      "response": "您好，您可以尝试下使用HDMI连接，媒体流运输等方式进行投屏，您可以根据您的设备自行查找下适配的投屏方式"
+    },
+    {
+      "content_hash": "332f811a807d1f0cc6327fc1cf5f8d6ac23026b6c429e748305557edd480b96a",
+      "duplicate_count": 2,
+      "strapi_ids": [
+        1303,
+        1325
+      ],
+      "title": "请问开通策略云会员后，在手机端运行，还需要保持电脑的运行吗？",
+      "faq": "请问开通策略云会员后，在手机端运行，还需要保持电脑的运行吗？",
+      "response": "您好，开启策略云策略后，不需要保持电脑的运行，因为策略云策略是在服务器上运行的。"
+    },
+    {
+      "content_hash": "3943050b802088f0702e09877368f1c064a9615f6af256a6f3c34b81d663408e",
+      "duplicate_count": 2,
+      "strapi_ids": [
+        3594,
+        3732
+      ],
+      "title": "APP如何修改密码",
+      "faq": "APP如何修改密码",
+      "response": "您好，您可以按照以下路径修改密码：\n在APP页面右下角点击“我的”->点击昵称->进入个人资料页面，找到“修改密码”->选择“旧密码方式/邮箱方式”后，即可修改密码。\n您可按操作图指示试一下"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "dataset": "real:legacy_router:eval_core_100.jsonl",
+    "total": 1,
+    "route_accuracy": 1.0,
+    "route_accuracy_normalized": 1.0,
+    "faq_recall_at_5": 1.0,
+    "faq_top1": 1.0,
+    "faq_mrr_at_5": 1.0,
+    "must_include_pass": 1.0,
+    "must_not_include_pass": 1.0,
+    "scored": {
+      "route": 1,
+      "faq": 1,
+      "must_include": 1,
+      "must_not_include": 1
+    },
+    "sample_failures": []
+  }
+]

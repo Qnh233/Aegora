@@ -1,0 +1,474 @@
+{
+  "dataset": "eval_retrieval_holdout_300.jsonl",
+  "total": 300,
+  "top_k": 5,
+  "recall_at_k": 0.99,
+  "top1_accuracy": 0.9467,
+  "mrr_at_k": 0.9675,
+  "search": {
+    "mean_ms": 13.83,
+    "p95_ms": 18.26,
+    "max_ms": 66.73
+  },
+  "sample_top1_failures": [
+    {
+      "id": "holdout_002",
+      "query": "（PC端 ）",
+      "expected_faq_ids": [
+        2885
+      ],
+      "results": [
+        {
+          "faq_id": 1584,
+          "title": "什么是PC端 （PC）",
+          "score": 0.845476
+        },
+        {
+          "faq_id": 1550,
+          "title": "手机端/PC端怎么更新版本",
+          "score": 0.654408
+        },
+        {
+          "faq_id": 698,
+          "title": "PC端指标无法保存应该怎么办？/PC端指标无法保存，退出后恢复默认设置",
+          "score": 0.598243
+        },
+        {
+          "faq_id": 99,
+          "title": "换手率在哪里查看？",
+          "score": 0.590501
+        },
+        {
+          "faq_id": 118,
+          "title": "PC端如何自定义底部栏行情",
+          "score": 0.587867
+        }
+      ]
+    },
+    {
+      "id": "holdout_028",
+      "query": "画线仅显示在当前周期",
+      "expected_faq_ids": [
+        90
+      ],
+      "results": [
+        {
+          "faq_id": 2455,
+          "title": "手机端画线怎么只看当前周期？/手机端画线怎么能只显示当前周期的画线？/如何看当前周期的画线？",
+          "score": 1.0
+        },
+        {
+          "faq_id": 90,
+          "title": "如何使所有画线在切换周期时画线显示？",
+          "score": 1.0
+        },
+        {
+          "faq_id": 206,
+          "title": "电脑和手机上的画线怎么同步？",
+          "score": 0.997862
+        },
+        {
+          "faq_id": 3603,
+          "title": "web端如何隐藏其他周期的画线",
+          "score": 0.995978
+        },
+        {
+          "faq_id": 3469,
+          "title": "多窗模式下，相同交易对，不同周期也可以同步画线吗？",
+          "score": 0.921566
+        }
+      ]
+    },
+    {
+      "id": "holdout_030",
+      "query": "为什么套利收益是负的?",
+      "expected_faq_ids": [
+        275
+      ],
+      "results": [
+        {
+          "faq_id": 416,
+          "title": "为什么套利开仓后一直都是负收益呢",
+          "score": 0.996236
+        },
+        {
+          "faq_id": 275,
+          "title": "为什么套利收益是负的?",
+          "score": 0.914502
+        }
+      ]
+    },
+    {
+      "id": "holdout_050",
+      "query": "如何设置快捷画线",
+      "expected_faq_ids": [
+        2100
+      ],
+      "results": [
+        {
+          "faq_id": 90,
+          "title": "如何使所有画线在切换周期时画线显示？",
+          "score": 0.989063
+        },
+        {
+          "faq_id": 2100,
+          "title": "如何在 K 线页面显示收藏的画线工具",
+          "score": 0.985875
+        },
+        {
+          "faq_id": 831,
+          "title": "请问画线预警怎么设置",
+          "score": 0.97605
+        },
+        {
+          "faq_id": 71,
+          "title": "电脑的画线怎么没同步在手机端呢？",
+          "score": 0.97453
+        },
+        {
+          "faq_id": 2102,
+          "title": "可以设置等周期画线吗",
+          "score": 0.967539
+        }
+      ]
+    },
+    {
+      "id": "holdout_079",
+      "query": "画线预警的频率",
+      "expected_faq_ids": [
+        1979
+      ],
+      "results": [
+        {
+          "faq_id": 1980,
+          "title": "画线预警支持按收盘价频率吗",
+          "score": 0.999928
+        },
+        {
+          "faq_id": 1979,
+          "title": "画线预警的频率",
+          "score": 0.999798
+        }
+      ]
+    },
+    {
+      "id": "holdout_094",
+      "query": "如何定制指标",
+      "expected_faq_ids": [
+        1094
+      ],
+      "results": [
+        {
+          "faq_id": 283,
+          "title": "会员自定义指标定制的权益具体的规则是什么",
+          "score": 0.962788
+        },
+        {
+          "faq_id": 1094,
+          "title": "我要定制指标",
+          "score": 0.90146
+        },
+        {
+          "faq_id": 592,
+          "title": "如何定制自定义指标？",
+          "score": 0.886997
+        },
+        {
+          "faq_id": 1920,
+          "title": "定制的指标胜率怎么样？",
+          "score": 0.874524
+        },
+        {
+          "faq_id": 1894,
+          "title": "我想要定制指标",
+          "score": 0.804128
+        }
+      ]
+    },
+    {
+      "id": "holdout_103",
+      "query": "我们的计算公式是和别人不一样吗",
+      "expected_faq_ids": [
+        266
+      ],
+      "results": [
+        {
+          "faq_id": 2391,
+          "title": "什么是RSI?/RSI是怎么计算的？",
+          "score": 0.767321
+        },
+        {
+          "faq_id": 2533,
+          "title": "滑点的百分比是怎么计算的？",
+          "score": 0.662994
+        },
+        {
+          "faq_id": 2262,
+          "title": "枢轴点是怎么计算的？",
+          "score": 0.619076
+        },
+        {
+          "faq_id": 1409,
+          "title": "盈亏比的画线工具的仓量是怎么计算的？ 账户是什么？",
+          "score": 0.594443
+        },
+        {
+          "faq_id": 3285,
+          "title": "aicoin K线图的%坐标具体是怎么计算的？",
+          "score": 0.555034
+        }
+      ]
+    },
+    {
+      "id": "holdout_109",
+      "query": "为什么下单未触发",
+      "expected_faq_ids": [
+        3522
+      ],
+      "results": [
+        {
+          "faq_id": 395,
+          "title": "自动下单中市价委托触发下单失败？",
+          "score": 0.778387
+        },
+        {
+          "faq_id": 3522,
+          "title": "为什么下单未触发？",
+          "score": 0.744153
+        },
+        {
+          "faq_id": 2888,
+          "title": "TradingView信号策略触发下单功能是什么？",
+          "score": 0.684359
+        },
+        {
+          "faq_id": 335,
+          "title": "网格触发下单是市价下单还是限价下单？",
+          "score": 0.622867
+        },
+        {
+          "faq_id": 3168,
+          "title": "运行中的实盘，修改了下单参数，是什么时候触发生效的",
+          "score": 0.566686
+        }
+      ]
+    },
+    {
+      "id": "holdout_153",
+      "query": "套利运行时长",
+      "expected_faq_ids": [
+        608
+      ],
+      "results": [
+        {
+          "faq_id": 1502,
+          "title": "套利运行时长代表什么？",
+          "score": 0.978768
+        },
+        {
+          "faq_id": 608,
+          "title": "套利运行时长",
+          "score": 0.965055
+        }
+      ]
+    },
+    {
+      "id": "holdout_169",
+      "query": "如何一次撤销我的全部挂单",
+      "expected_faq_ids": [
+        2370
+      ],
+      "results": [
+        {
+          "faq_id": 3604,
+          "title": "我想要在达成某一条件后，撤销之前的所有挂单。这样的代码怎么写",
+          "score": 0.543324
+        },
+        {
+          "faq_id": 2370,
+          "title": "如何一次撤销我的全部挂单？",
+          "score": 0.340005
+        },
+        {
+          "faq_id": 995,
+          "title": "主力大单里面“当前数量”是什么意思",
+          "score": 0.085297
+        },
+        {
+          "faq_id": 996,
+          "title": "主力大单里面“最大数量”是什么意思",
+          "score": 0.085297
+        },
+        {
+          "faq_id": 3034,
+          "title": "为什么可以只允许maker成交？",
+          "score": 0.051744
+        }
+      ]
+    },
+    {
+      "id": "holdout_185",
+      "query": "套利工具的近7日累计费率是什么意思",
+      "expected_faq_ids": [
+        2716
+      ],
+      "results": [
+        {
+          "faq_id": 2715,
+          "title": "套利工具的近3日累计费率是什么意思",
+          "score": 1.0
+        },
+        {
+          "faq_id": 2716,
+          "title": "套利工具的近7日累计费率是什么意思",
+          "score": 1.0
+        },
+        {
+          "faq_id": 2718,
+          "title": "套利工具的7日年化收益是什么意思",
+          "score": 0.996016
+        }
+      ]
+    },
+    {
+      "id": "holdout_192",
+      "query": "主力大单的挂单金额是一个账户还是多个账户汇总",
+      "expected_faq_ids": [
+        1926
+      ],
+      "results": [
+        {
+          "faq_id": 696,
+          "title": "主力大单的挂单金额是一个账户还是多个账户汇总",
+          "score": 1.0
+        },
+        {
+          "faq_id": 1926,
+          "title": "主力大单的挂单金额是一个账户还是多个账户汇总",
+          "score": 1.0
+        }
+      ]
+    },
+    {
+      "id": "holdout_224",
+      "query": "有教程吗",
+      "expected_faq_ids": [
+        3037
+      ],
+      "results": [
+        {
+          "faq_id": 711,
+          "title": "有AiCoin使用教程吗",
+          "score": 0.597554
+        },
+        {
+          "faq_id": 3037,
+          "title": "筹码分布怎么用？有教程吗？",
+          "score": 0.450672
+        },
+        {
+          "faq_id": 524,
+          "title": "信号预警有使用教程吗",
+          "score": 0.424053
+        },
+        {
+          "faq_id": 2243,
+          "title": "支持TRC20购买会员吗，有教程吗",
+          "score": 0.39041
+        },
+        {
+          "faq_id": 1689,
+          "title": "有策略云的使用教程吗",
+          "score": 0.376514
+        }
+      ]
+    },
+    {
+      "id": "holdout_252",
+      "query": "如何操作",
+      "expected_faq_ids": [
+        3221
+      ],
+      "results": [
+        {
+          "faq_id": 812,
+          "title": "对于抢新开盘，这种操作会被交易所定为违规操作吗?",
+          "score": 0.088977
+        },
+        {
+          "faq_id": 2471,
+          "title": "三角套利开仓操作流程",
+          "score": 0.088977
+        },
+        {
+          "faq_id": 589,
+          "title": "多账户下单是多个账户同时操作下单吗",
+          "score": 0.082746
+        },
+        {
+          "faq_id": 1221,
+          "title": "策略云安全吗？",
+          "score": 0.082746
+        },
+        {
+          "faq_id": 1306,
+          "title": "请问币本位支持网格操作吗？",
+          "score": 0.082746
+        }
+      ]
+    },
+    {
+      "id": "holdout_279",
+      "query": "什么是大额成交列表 (Large Trades List)",
+      "expected_faq_ids": [
+        1516
+      ],
+      "results": [
+        {
+          "faq_id": 1841,
+          "title": "什么是大额成交列表 (Large Trades List)",
+          "score": 0.999999
+        },
+        {
+          "faq_id": 1516,
+          "title": "什么是大额成交列表 (Large Trades List)",
+          "score": 0.999999
+        }
+      ]
+    },
+    {
+      "id": "holdout_289",
+      "query": "换手率",
+      "expected_faq_ids": [
+        681
+      ],
+      "results": [
+        {
+          "faq_id": 99,
+          "title": "换手率在哪里查看？",
+          "score": 0.093607
+        },
+        {
+          "faq_id": 2681,
+          "title": "条件选币中的换手率如何理解",
+          "score": 0.092856
+        },
+        {
+          "faq_id": 1155,
+          "title": "换手率函数有没",
+          "score": 0.088977
+        },
+        {
+          "faq_id": 681,
+          "title": "换手率",
+          "score": 0.086545
+        },
+        {
+          "faq_id": 3459,
+          "title": "api套餐里的快讯有什么内容？",
+          "score": 0.060793
+        }
+      ]
+    }
+  ]
+}

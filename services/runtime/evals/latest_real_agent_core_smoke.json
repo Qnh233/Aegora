@@ -1,0 +1,36 @@
+[
+  {
+    "dataset": "real:eval_core_100.jsonl",
+    "total": 10,
+    "route_accuracy": 1.0,
+    "route_accuracy_normalized": 1.0,
+    "faq_recall_at_5": 1.0,
+    "faq_top1": 0.9,
+    "faq_mrr_at_5": 0.95,
+    "must_include_pass": 1.0,
+    "must_not_include_pass": 1.0,
+    "scored": {
+      "route": 10,
+      "faq": 10,
+      "must_include": 10,
+      "must_not_include": 10
+    },
+    "sample_failures": [
+      {
+        "id": "faq_010",
+        "query": "直播在哪里看",
+        "kind": "retrieval",
+        "expected_faq_ids": [
+          93
+        ],
+        "retrieved_ids": [
+          2029,
+          93,
+          382,
+          2350,
+          3675
+        ]
+      }
+    ]
+  }
+]

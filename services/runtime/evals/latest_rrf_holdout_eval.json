@@ -1,0 +1,581 @@
+{
+  "dataset": "eval_retrieval_holdout_300.jsonl",
+  "fusion_method": "rrf",
+  "rrf_k": 60,
+  "tie_break_source": "vector",
+  "candidate_k": 5,
+  "top_k": 5,
+  "total": 300,
+  "recall_at_k": 0.9933,
+  "top1_accuracy": 0.9633,
+  "mrr_at_k": 0.9769,
+  "query_encoding": {
+    "total_ms": 57753.33,
+    "mean_ms": 192.51
+  },
+  "hybrid_search": {
+    "mean_ms": 27.92,
+    "p95_ms": 37.09,
+    "max_ms": 106.22
+  },
+  "sample_top1_failures": [
+    {
+      "id": "holdout_002",
+      "query": "（PC端 ）",
+      "expected_faq_ids": [
+        2885
+      ],
+      "results": [
+        {
+          "faq_id": 1584,
+          "title": "什么是PC端 （PC）",
+          "rrf_score": 0.032787,
+          "source_ranks": {
+            "fulltext": 1,
+            "vector": 1
+          }
+        },
+        {
+          "faq_id": 946,
+          "title": "云端布局的使用教程",
+          "rrf_score": 0.016129,
+          "source_ranks": {
+            "vector": 2
+          }
+        },
+        {
+          "faq_id": 1550,
+          "title": "手机端/PC端怎么更新版本",
+          "rrf_score": 0.016129,
+          "source_ranks": {
+            "fulltext": 2
+          }
+        },
+        {
+          "faq_id": 354,
+          "title": "测试用",
+          "rrf_score": 0.015873,
+          "source_ranks": {
+            "vector": 3
+          }
+        },
+        {
+          "faq_id": 698,
+          "title": "PC端指标无法保存应该怎么办？/PC端指标无法保存，退出后恢复默认设置",
+          "rrf_score": 0.015873,
+          "source_ranks": {
+            "fulltext": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "holdout_027",
+      "query": "PC端是否可以查看指标说明",
+      "expected_faq_ids": [
+        125
+      ],
+      "results": [
+        {
+          "faq_id": 60,
+          "title": "如何查看指标说明？",
+          "rrf_score": 0.016393,
+          "source_ranks": {
+            "vector": 1
+          }
+        },
+        {
+          "faq_id": 125,
+          "title": "TD是什么指标？",
+          "rrf_score": 0.016393,
+          "source_ranks": {
+            "fulltext": 1
+          }
+        },
+        {
+          "faq_id": 545,
+          "title": "电脑端上的自定义指标可以在手机端显示出来吗？",
+          "rrf_score": 0.016129,
+          "source_ranks": {
+            "vector": 2
+          }
+        },
+        {
+          "faq_id": 329,
+          "title": "开通了指标胜率，在哪里查看指标策略",
+          "rrf_score": 0.015873,
+          "source_ranks": {
+            "vector": 3
+          }
+        },
+        {
+          "faq_id": 2324,
+          "title": "网页版怎么查看自定义指标？",
+          "rrf_score": 0.015625,
+          "source_ranks": {
+            "vector": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "holdout_028",
+      "query": "画线仅显示在当前周期",
+      "expected_faq_ids": [
+        90
+      ],
+      "results": [
+        {
+          "faq_id": 2455,
+          "title": "手机端画线怎么只看当前周期？/手机端画线怎么能只显示当前周期的画线？/如何看当前周期的画线？",
+          "rrf_score": 0.032787,
+          "source_ranks": {
+            "fulltext": 1,
+            "vector": 1
+          }
+        },
+        {
+          "faq_id": 90,
+          "title": "如何使所有画线在切换周期时画线显示？",
+          "rrf_score": 0.032258,
+          "source_ranks": {
+            "fulltext": 2,
+            "vector": 2
+          }
+        },
+        {
+          "faq_id": 3603,
+          "title": "web端如何隐藏其他周期的画线",
+          "rrf_score": 0.03125,
+          "source_ranks": {
+            "fulltext": 4,
+            "vector": 4
+          }
+        },
+        {
+          "faq_id": 3432,
+          "title": "手机端可以仅显示当前周期画的线吗？",
+          "rrf_score": 0.015873,
+          "source_ranks": {
+            "vector": 3
+          }
+        },
+        {
+          "faq_id": 206,
+          "title": "电脑和手机上的画线怎么同步？",
+          "rrf_score": 0.015873,
+          "source_ranks": {
+            "fulltext": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "holdout_030",
+      "query": "为什么套利收益是负的?",
+      "expected_faq_ids": [
+        275
+      ],
+      "results": [
+        {
+          "faq_id": 416,
+          "title": "为什么套利开仓后一直都是负收益呢",
+          "rrf_score": 0.032787,
+          "source_ranks": {
+            "fulltext": 1,
+            "vector": 1
+          }
+        },
+        {
+          "faq_id": 275,
+          "title": "为什么套利收益是负的?",
+          "rrf_score": 0.032258,
+          "source_ranks": {
+            "fulltext": 2,
+            "vector": 2
+          }
+        },
+        {
+          "faq_id": 651,
+          "title": "套利净利润显示负数",
+          "rrf_score": 0.015873,
+          "source_ranks": {
+            "vector": 3
+          }
+        },
+        {
+          "faq_id": 670,
+          "title": "什么是反向套利",
+          "rrf_score": 0.015625,
+          "source_ranks": {
+            "vector": 4
+          }
+        },
+        {
+          "faq_id": 661,
+          "title": "正向套利原理",
+          "rrf_score": 0.015385,
+          "source_ranks": {
+            "vector": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "holdout_046",
+      "query": "如何切换单向持仓",
+      "expected_faq_ids": [
+        2194
+      ],
+      "results": [
+        {
+          "faq_id": 3690,
+          "title": "api我想从单向持仓改双向持仓在哪改",
+          "rrf_score": 0.032522,
+          "source_ranks": {
+            "fulltext": 2,
+            "vector": 1
+          }
+        },
+        {
+          "faq_id": 2194,
+          "title": "如何切换仓位模式？如何切换单向持仓？",
+          "rrf_score": 0.032522,
+          "source_ranks": {
+            "fulltext": 1,
+            "vector": 2
+          }
+        },
+        {
+          "faq_id": 834,
+          "title": "我电脑端下单是全仓的怎么改成逐仓",
+          "rrf_score": 0.015873,
+          "source_ranks": {
+            "vector": 3
+          }
+        },
+        {
+          "faq_id": 1293,
+          "title": "币安的API合约交易可以双向开仓和持仓吗?",
+          "rrf_score": 0.015873,
+          "source_ranks": {
+            "fulltext": 3
+          }
+        },
+        {
+          "faq_id": 2193,
+          "title": "什么是仓位模式？什么是单向持仓？什么是双向持仓？",
+          "rrf_score": 0.015625,
+          "source_ranks": {
+            "vector": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "holdout_105",
+      "query": "Resistance Line)",
+      "expected_faq_ids": [
+        1518
+      ],
+      "results": [
+        {
+          "faq_id": 1843,
+          "title": "什么是智能撑压线(AI-Support/Resistance Line)",
+          "rrf_score": 0.032522,
+          "source_ranks": {
+            "fulltext": 2,
+            "vector": 1
+          }
+        },
+        {
+          "faq_id": 1518,
+          "title": "什么是智能撑压线(AI-Support/Resistance Line)",
+          "rrf_score": 0.032266,
+          "source_ranks": {
+            "fulltext": 1,
+            "vector": 3
+          }
+        },
+        {
+          "faq_id": 1391,
+          "title": "我如果下单现货杠杆，你们能支持显示委单线、 委单记录、持仓线这些指标吗？",
+          "rrf_score": 0.016129,
+          "source_ranks": {
+            "vector": 2
+          }
+        },
+        {
+          "faq_id": 50,
+          "title": "是否支持组合K线和对比K线？",
+          "rrf_score": 0.015625,
+          "source_ranks": {
+            "vector": 4
+          }
+        },
+        {
+          "faq_id": 1361,
+          "title": "价格通道如何使用？",
+          "rrf_score": 0.015385,
+          "source_ranks": {
+            "vector": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "holdout_224",
+      "query": "有教程吗",
+      "expected_faq_ids": [
+        3037
+      ],
+      "results": [
+        {
+          "faq_id": 711,
+          "title": "有AiCoin使用教程吗",
+          "rrf_score": 0.032522,
+          "source_ranks": {
+            "fulltext": 1,
+            "vector": 2
+          }
+        },
+        {
+          "faq_id": 1689,
+          "title": "有策略云的使用教程吗",
+          "rrf_score": 0.03101,
+          "source_ranks": {
+            "fulltext": 5,
+            "vector": 4
+          }
+        },
+        {
+          "faq_id": 1105,
+          "title": "有没有挖矿教程",
+          "rrf_score": 0.016393,
+          "source_ranks": {
+            "vector": 1
+          }
+        },
+        {
+          "faq_id": 3037,
+          "title": "筹码分布怎么用？有教程吗？",
+          "rrf_score": 0.016129,
+          "source_ranks": {
+            "fulltext": 2
+          }
+        },
+        {
+          "faq_id": 380,
+          "title": "能否提供一些套利教程参考？",
+          "rrf_score": 0.015873,
+          "source_ranks": {
+            "vector": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "holdout_252",
+      "query": "如何操作",
+      "expected_faq_ids": [
+        3221
+      ],
+      "results": [
+        {
+          "faq_id": 2471,
+          "title": "三角套利开仓操作流程",
+          "rrf_score": 0.032002,
+          "source_ranks": {
+            "fulltext": 2,
+            "vector": 3
+          }
+        },
+        {
+          "faq_id": 2796,
+          "title": "如何使用右侧的“操作”按钮？",
+          "rrf_score": 0.016393,
+          "source_ranks": {
+            "vector": 1
+          }
+        },
+        {
+          "faq_id": 812,
+          "title": "对于抢新开盘，这种操作会被交易所定为违规操作吗?",
+          "rrf_score": 0.016393,
+          "source_ranks": {
+            "fulltext": 1
+          }
+        },
+        {
+          "faq_id": 3169,
+          "title": "我想在实盘运行中，每次都想把仓位全部平完，需要怎么操作",
+          "rrf_score": 0.016129,
+          "source_ranks": {
+            "vector": 2
+          }
+        },
+        {
+          "faq_id": 589,
+          "title": "多账户下单是多个账户同时操作下单吗",
+          "rrf_score": 0.015873,
+          "source_ranks": {
+            "fulltext": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "holdout_262",
+      "query": "欧易的GMT",
+      "expected_faq_ids": [
+        568
+      ],
+      "results": [
+        {
+          "faq_id": 343,
+          "title": "为什么MACD指标数据总是会比欧易平台上的晚显示?",
+          "rrf_score": 0.016393,
+          "source_ranks": {
+            "vector": 1
+          }
+        },
+        {
+          "faq_id": 568,
+          "title": "怎样查看平仓的买卖记录",
+          "rrf_score": 0.016393,
+          "source_ranks": {
+            "fulltext": 1
+          }
+        },
+        {
+          "faq_id": 3640,
+          "title": "欧易的X Launch是什么？",
+          "rrf_score": 0.016129,
+          "source_ranks": {
+            "vector": 2
+          }
+        },
+        {
+          "faq_id": 1255,
+          "title": "为什么欧易ema的月K数据不一和原平台不一致",
+          "rrf_score": 0.015873,
+          "source_ranks": {
+            "vector": 3
+          }
+        },
+        {
+          "faq_id": 301,
+          "title": "和欧易这些平台是合作关系吗？",
+          "rrf_score": 0.015625,
+          "source_ranks": {
+            "vector": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "holdout_279",
+      "query": "什么是大额成交列表 (Large Trades List)",
+      "expected_faq_ids": [
+        1516
+      ],
+      "results": [
+        {
+          "faq_id": 1841,
+          "title": "什么是大额成交列表 (Large Trades List)",
+          "rrf_score": 0.032787,
+          "source_ranks": {
+            "fulltext": 1,
+            "vector": 1
+          }
+        },
+        {
+          "faq_id": 1516,
+          "title": "什么是大额成交列表 (Large Trades List)",
+          "rrf_score": 0.032258,
+          "source_ranks": {
+            "fulltext": 2,
+            "vector": 2
+          }
+        },
+        {
+          "faq_id": 1839,
+          "title": "什么是大额成交（AI-Large Trades）",
+          "rrf_score": 0.015873,
+          "source_ranks": {
+            "vector": 3
+          }
+        },
+        {
+          "faq_id": 1514,
+          "title": "什么是大额成交（AI-Large Trades）",
+          "rrf_score": 0.015625,
+          "source_ranks": {
+            "vector": 4
+          }
+        },
+        {
+          "faq_id": 1838,
+          "title": "什么是主力大单列表 (Large Orders List)",
+          "rrf_score": 0.015385,
+          "source_ranks": {
+            "vector": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "holdout_289",
+      "query": "换手率",
+      "expected_faq_ids": [
+        681
+      ],
+      "results": [
+        {
+          "faq_id": 99,
+          "title": "换手率在哪里查看？",
+          "rrf_score": 0.032266,
+          "source_ranks": {
+            "fulltext": 1,
+            "vector": 3
+          }
+        },
+        {
+          "faq_id": 2681,
+          "title": "条件选币中的换手率如何理解",
+          "rrf_score": 0.032258,
+          "source_ranks": {
+            "fulltext": 2,
+            "vector": 2
+          }
+        },
+        {
+          "faq_id": 681,
+          "title": "换手率",
+          "rrf_score": 0.032018,
+          "source_ranks": {
+            "fulltext": 4,
+            "vector": 1
+          }
+        },
+        {
+          "faq_id": 1155,
+          "title": "换手率函数有没",
+          "rrf_score": 0.031498,
+          "source_ranks": {
+            "fulltext": 3,
+            "vector": 4
+          }
+        },
+        {
+          "faq_id": 2056,
+          "title": "主力换手是什么意思",
+          "rrf_score": 0.015385,
+          "source_ranks": {
+            "vector": 5
+          }
+        }
+      ]
+    }
+  ]
+}

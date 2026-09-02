@@ -1,0 +1,201 @@
+{
+  "total": 8,
+  "ok": 8,
+  "success_rate": 1.0,
+  "concurrency": 1,
+  "wall_ms": 70731.01,
+  "throughput_qps": 0.1131,
+  "latency_ms": {
+    "min": 22.32,
+    "p50": 7859.48,
+    "p90": 15205.59,
+    "p95": 17446.79,
+    "p99": 19239.75,
+    "max": 19687.99,
+    "mean": 8841.33
+  },
+  "route_counts": {
+    "clarify": 2,
+    "handoff": 1,
+    "chat": 3,
+    "faq_answer": 2
+  },
+  "model_usage": {
+    "calls_total": 11,
+    "calls_mean": 1.375,
+    "calls_p50": 1.5,
+    "tokens_total": 8483,
+    "tokens_mean": 1060.38
+  },
+  "slowest": [
+    {
+      "id": "perf_real_004",
+      "ok": true,
+      "latency_ms": 19687.99132798449,
+      "route": "faq_answer",
+      "status": "completed",
+      "evidence_count": 3,
+      "model_usage": {
+        "total_calls": 2,
+        "failed_calls": 0,
+        "by_model": {
+          "deepseek-v4-pro": {
+            "calls": 2,
+            "failed_calls": 0,
+            "prompt_tokens": 1500,
+            "completion_tokens": 220,
+            "total_tokens": 1720
+          }
+        }
+      }
+    },
+    {
+      "id": "perf_real_001",
+      "ok": true,
+      "latency_ms": 13284.559658000944,
+      "route": "clarify",
+      "status": "completed",
+      "evidence_count": 0,
+      "model_usage": {
+        "total_calls": 2,
+        "failed_calls": 0,
+        "by_model": {
+          "deepseek-v4-pro": {
+            "calls": 2,
+            "failed_calls": 0,
+            "prompt_tokens": 941,
+            "completion_tokens": 593,
+            "total_tokens": 1534
+          }
+        }
+      }
+    },
+    {
+      "id": "perf_real_005",
+      "ok": true,
+      "latency_ms": 12509.707893012092,
+      "route": "clarify",
+      "status": "completed",
+      "evidence_count": 0,
+      "model_usage": {
+        "total_calls": 2,
+        "failed_calls": 0,
+        "by_model": {
+          "deepseek-v4-pro": {
+            "calls": 2,
+            "failed_calls": 0,
+            "prompt_tokens": 947,
+            "completion_tokens": 544,
+            "total_tokens": 1491
+          }
+        }
+      }
+    },
+    {
+      "id": "perf_real_006",
+      "ok": true,
+      "latency_ms": 10338.982886984013,
+      "route": "faq_answer",
+      "status": "completed",
+      "evidence_count": 3,
+      "model_usage": {
+        "total_calls": 2,
+        "failed_calls": 0,
+        "by_model": {
+          "deepseek-v4-pro": {
+            "calls": 2,
+            "failed_calls": 0,
+            "prompt_tokens": 1509,
+            "completion_tokens": 385,
+            "total_tokens": 1894
+          }
+        }
+      }
+    },
+    {
+      "id": "perf_real_003",
+      "ok": true,
+      "latency_ms": 5379.972594004357,
+      "route": "chat",
+      "status": "completed",
+      "evidence_count": 0,
+      "model_usage": {
+        "total_calls": 1,
+        "failed_calls": 0,
+        "by_model": {
+          "deepseek-v4-pro": {
+            "calls": 1,
+            "failed_calls": 0,
+            "prompt_tokens": 436,
+            "completion_tokens": 205,
+            "total_tokens": 641
+          }
+        }
+      }
+    },
+    {
+      "id": "perf_real_008",
+      "ok": true,
+      "latency_ms": 5035.293719993206,
+      "route": "chat",
+      "status": "completed",
+      "evidence_count": 0,
+      "model_usage": {
+        "total_calls": 1,
+        "failed_calls": 0,
+        "by_model": {
+          "deepseek-v4-pro": {
+            "calls": 1,
+            "failed_calls": 0,
+            "prompt_tokens": 442,
+            "completion_tokens": 179,
+            "total_tokens": 621
+          }
+        }
+      }
+    },
+    {
+      "id": "perf_real_007",
+      "ok": true,
+      "latency_ms": 4471.816749981372,
+      "route": "chat",
+      "status": "completed",
+      "evidence_count": 0,
+      "model_usage": {
+        "total_calls": 1,
+        "failed_calls": 0,
+        "by_model": {
+          "deepseek-v4-pro": {
+            "calls": 1,
+            "failed_calls": 0,
+            "prompt_tokens": 436,
+            "completion_tokens": 146,
+            "total_tokens": 582
+          }
+        }
+      }
+    },
+    {
+      "id": "perf_real_002",
+      "ok": true,
+      "latency_ms": 22.317930008284748,
+      "route": "handoff",
+      "status": "completed",
+      "evidence_count": 0,
+      "model_usage": {
+        "total_calls": 0,
+        "failed_calls": 0,
+        "by_model": {
+          "deepseek-v4-pro": {
+            "calls": 0,
+            "failed_calls": 0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0
+          }
+        }
+      }
+    }
+  ],
+  "errors": []
+}

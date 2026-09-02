@@ -1,0 +1,159 @@
+{
+  "dataset": "real:legacy_router:eval_core_100.jsonl",
+  "total": 20,
+  "answer_scored": 20,
+  "judged": 20,
+  "grounded_rate": 0.95,
+  "hallucination_rate": 0.05,
+  "key_step_coverage": 0.8375,
+  "judge_errors": 0,
+  "skipped": 0,
+  "cache": {
+    "path": "<runtime-root>/evals/cache/answer_quality_cache.jsonl",
+    "hits": 10,
+    "writes": 10
+  },
+  "thresholds": {
+    "grounded_rate": ">= 0.97",
+    "hallucination_rate": "<= 0.03",
+    "key_step_coverage": ">= 0.90"
+  },
+  "samples": [
+    {
+      "id": "faq_010",
+      "query": "直播在哪里看",
+      "route": "faq_answer",
+      "answer": "您好，直播入口如下：PC端：群聊-直播；APP端：动态-群聊-直播。您可以根据提示操作。",
+      "judgement": {
+        "grounded": true,
+        "hallucination": false,
+        "key_points_total": 4,
+        "key_points_covered": 0,
+        "missing_key_points": [
+          "有的",
+          "请关注",
+          "AiCoin",
+          "您可以预约观看相关直播"
+        ],
+        "unsupported_claims": [],
+        "risk_level": "none",
+        "reason": "答案正确给出了直播入口，但未覆盖预期关键点。"
+      },
+      "retrieved_faq_ids": [
+        2029,
+        93,
+        382,
+        2350,
+        3675
+      ],
+      "expected_key_points": [
+        "有的",
+        "请关注",
+        "AiCoin",
+        "您可以预约观看相关直播"
+      ]
+    },
+    {
+      "id": "faq_017",
+      "query": "被查核违反了规则禁言 为什么被封禁了",
+      "route": "handoff",
+      "answer": "这个问题需要人工进一步处理。请补充账号、订单号、截图或报错信息，人工会据此核实。",
+      "judgement": {
+        "grounded": true,
+        "hallucination": false,
+        "key_points_total": 4,
+        "key_points_covered": 0,
+        "missing_key_points": [
+          "现已解封",
+          "请遵守广场社区管理规定",
+          "避免被禁言的情况再次发生",
+          "被禁言是怎么回事"
+        ],
+        "unsupported_claims": [],
+        "risk_level": "medium",
+        "reason": "回答未覆盖任何关键点，但未编造事实，直接转人工，风险中等。"
+      },
+      "retrieved_faq_ids": [
+        191,
+        2209,
+        1993,
+        2360,
+        3380
+      ],
+      "expected_key_points": [
+        "现已解封",
+        "请遵守广场社区管理规定",
+        "避免被禁言的情况再次发生",
+        "被禁言是怎么回事"
+      ]
+    },
+    {
+      "id": "faq_018",
+      "query": "为什么没发布违反规范的内容被禁言",
+      "route": "handoff",
+      "answer": "这个问题需要人工进一步处理。请补充账号、订单号、截图或报错信息，人工会据此核实。",
+      "judgement": {
+        "grounded": false,
+        "hallucination": true,
+        "key_points_total": 4,
+        "key_points_covered": 0,
+        "missing_key_points": [
+          "机器人误识别为广告自动封禁",
+          "现已解封",
+          "请您刷新发言试试",
+          "为什么没发布违反规范的内容被禁言"
+        ],
+        "unsupported_claims": [
+          "需要人工进一步处理",
+          "请补充账号、订单号、截图或报错信息"
+        ],
+        "risk_level": "medium",
+        "reason": "答案未使用证据中的FAQ，直接转人工，与证据明确给出的‘已解封请刷新发言’矛盾，可能误导用户进行不必要的等待。"
+      },
+      "retrieved_faq_ids": [
+        1993,
+        2209,
+        191,
+        2360,
+        3380
+      ],
+      "expected_key_points": [
+        "机器人误识别为广告自动封禁",
+        "现已解封",
+        "请您刷新发言试试",
+        "为什么没发布违反规范的内容被禁言"
+      ]
+    },
+    {
+      "id": "faq_019",
+      "query": "APP如何查看7日资金流向数据",
+      "route": "faq_answer",
+      "answer": "您好，APP支持查看交易对的今日、24时、2日、3日、4日、7日和30日周期的资金流向数据，查看路径：首页->功能->数据榜单->资金流向。\n\n操作图如下，您可按操作图指示试一下",
+      "judgement": {
+        "grounded": true,
+        "hallucination": false,
+        "key_points_total": 4,
+        "key_points_covered": 3,
+        "missing_key_points": [
+          "日和"
+        ],
+        "unsupported_claims": [],
+        "risk_level": "none",
+        "reason": "答案完全由FAQ证据支持，但未覆盖关键点“日和”。"
+      },
+      "retrieved_faq_ids": [
+        49,
+        165,
+        3228,
+        581,
+        1382
+      ],
+      "expected_key_points": [
+        "APP",
+        "支持查看交易对的今日",
+        "24",
+        "日和"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "kind": "collectionType",
+  "collectionName": "agent_chat_sessions",
+  "info": {
+    "singularName": "agent-chat-session",
+    "pluralName": "agent-chat-sessions",
+    "displayName": "Agent 会话"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "session_id": {"type": "string", "required": true, "unique": true},
+    "user_id": {"type": "string", "required": true},
+    "title": {"type": "string"},
+    "source": {"type": "string"},
+    "metadata": {"type": "json"}
+  }
+}

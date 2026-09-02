@@ -1,0 +1,152 @@
+{
+  "dataset": "real:legacy_router:eval_core_100.jsonl",
+  "total": 20,
+  "answer_scored": 18,
+  "judged": 18,
+  "grounded_rate": 0.8889,
+  "hallucination_rate": 0.0,
+  "key_step_coverage": 0.9028,
+  "judge_errors": 0,
+  "skipped": 2,
+  "cache": {
+    "path": "<runtime-root>/evals/cache/answer_quality_cache.jsonl",
+    "hits": 0,
+    "writes": 20
+  },
+  "thresholds": {
+    "grounded_rate": ">= 0.97",
+    "hallucination_rate": "<= 0.03",
+    "key_step_coverage": ">= 0.90"
+  },
+  "samples": [
+    {
+      "id": "faq_010",
+      "query": "直播在哪里看",
+      "route": "faq_answer",
+      "answer": "您好，您可以在PC端点击“群聊-直播”观看直播，在APP端点击“动态-群聊-直播”观看。",
+      "judgement": {
+        "grounded": true,
+        "hallucination": false,
+        "key_points_total": 4,
+        "key_points_covered": 0,
+        "missing_key_points": [
+          "有的",
+          "请关注",
+          "AiCoin",
+          "您可以预约观看相关直播"
+        ],
+        "unsupported_claims": [],
+        "risk_level": "none",
+        "reason": "回答仅提供了观看直播的路径，未覆盖任何预期关键点，但路径有证据支持，无幻觉。"
+      },
+      "retrieved_faq_ids": [
+        2029,
+        93,
+        382,
+        2350,
+        3675
+      ],
+      "expected_key_points": [
+        "有的",
+        "请关注",
+        "AiCoin",
+        "您可以预约观看相关直播"
+      ]
+    },
+    {
+      "id": "faq_012",
+      "query": "为什么MAC端无法打开，提示\"无法检查其是否包含恶意软件\"",
+      "route": "faq_answer",
+      "answer": "您好，Mac 安装如遇：“无法打开AICoin，因为Apple无法检查其是否包含恶意软件”\n解决办法\n1、打开Mac自带的“终端”软件，在窗口输入 sudo spctl --master-disable， 然后按“回车”，再输入电脑开机密码（输密码是看不到的，直接输完回车即可，密码是为了确认修改设置，无风险） \n2、打开 系统偏好设置 -> 安全与隐私，确认已勾选“任何来源”\n3、再次点击 AICoin 安装文件，弹窗选择“打开”即可安...",
+      "judgement": {
+        "grounded": false,
+        "hallucination": false,
+        "key_points_total": 4,
+        "key_points_covered": 4,
+        "missing_key_points": [],
+        "unsupported_claims": [
+          "回答中使用的命令 \"sudo spctl --master-disable\" 与证据中的 \"sudo spctl ->->master->disable\" 不一致"
+        ],
+        "risk_level": "low",
+        "reason": "回答中“--master-disable”命令格式与证据中的“->->master->disable”不一致，但其余内容与证据一致；关键点已覆盖。"
+      },
+      "retrieved_faq_ids": [
+        86,
+        1343,
+        3463,
+        761,
+        3289
+      ],
+      "expected_key_points": [
+        "Mac",
+        "安装如遇",
+        "无法打开",
+        "AICoin"
+      ]
+    },
+    {
+      "id": "faq_019",
+      "query": "APP如何查看7日资金流向数据",
+      "route": "faq_answer",
+      "answer": "您好，APP支持查看交易对的7日资金流向数据。查看路径：首页 -> 功能 -> 数据榜单 -> 资金流向，选择对应交易对及7日周期即可查看。",
+      "judgement": {
+        "grounded": true,
+        "hallucination": false,
+        "key_points_total": 4,
+        "key_points_covered": 1,
+        "missing_key_points": [
+          "支持查看交易对的今日",
+          "24",
+          "日和"
+        ],
+        "unsupported_claims": [],
+        "risk_level": "none",
+        "reason": "回答内容被证据支持，无幻觉，但未覆盖所有预期关键点。"
+      },
+      "retrieved_faq_ids": [
+        49,
+        165,
+        3228,
+        581,
+        1382
+      ],
+      "expected_key_points": [
+        "APP",
+        "支持查看交易对的今日",
+        "24",
+        "日和"
+      ]
+    },
+    {
+      "id": "faq_015",
+      "query": "如何设置指标 怎么添加布林带指标 如何把布林带设置到副图 MACD不显示了怎么调出来 请问行情怎么添加macd副图",
+      "route": "faq_answer",
+      "answer": "您好，指标设置方法：\n\n点击K线上方指标库，找到所需指标（如布林带或MACD），点击“显示到K线”，勾选后即可查看。主图指标显示在K线图上，副图指标显示在K线图下方。布林带通常默认显示在副图，如需添加到副图只需按此操作即可。如果MACD不显示了，同样在指标库中找到MACD，重新勾选“显示到K线”。\n\nAPP及PC电脑端操作类似，您可以尝试一下。",
+      "judgement": {
+        "grounded": false,
+        "hallucination": false,
+        "key_points_total": 4,
+        "key_points_covered": 4,
+        "missing_key_points": [],
+        "unsupported_claims": [
+          "布林带通常默认显示在副图"
+        ],
+        "risk_level": "low",
+        "reason": "答案主要基于FAQ，但‘布林带默认显示在副图’无证据支持，其余均吻合。"
+      },
+      "retrieved_faq_ids": [
+        74,
+        2328,
+        2354,
+        144,
+        3524
+      ],
+      "expected_key_points": [
+        "指标设置方法",
+        "线上方指标库",
+        "找到所需指标",
+        "显示到"
+      ]
+    }
+  ]
+}

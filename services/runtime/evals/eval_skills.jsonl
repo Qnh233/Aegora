@@ -1,0 +1,10 @@
+{"id":"skill_001","query":"我想购买会员，有什么权益","product_id":"aicoin","domain_hint":"membership","expected_skill_names":["membership_purchase"],"allow_commercial":true}
+{"id":"skill_002","query":"会员怎么升级","product_id":"aicoin","domain_hint":"membership","expected_skill_names":["membership_purchase"],"allow_commercial":true}
+{"id":"skill_003","query":"这个功能受限了，有什么解决办法","product_id":"aicoin","domain_hint":"membership","expected_skill_names":[],"allow_commercial":false}
+{"id":"skill_004","query":"如何设置悬浮窗","product_id":"aicoin","domain_hint":"chart","expected_skill_names":[],"allow_commercial":false}
+{"id":"skill_005","query":"我要投诉会员购买问题","product_id":"aicoin","domain_hint":"membership","expected_skill_names":[],"allow_commercial":false}
+{"id":"skill_006","query":"你是谁","product_id":"aicoin","domain_hint":null,"expected_skill_names":[],"allow_commercial":false}
+{"id":"skill_007","query":"会员价格是多少","product_id":"other-product","domain_hint":"membership","expected_skill_names":[],"allow_commercial":true}
+{"id":"skill_008","query":"充值会员没到账，帮我查订单","product_id":"aicoin","domain_hint":"membership","expected_skill_names":[],"allow_commercial":false}
+{"id":"skill_009","query":"这个功能受限了","product_id":"aicoin","domain_hint":"membership","repeated_commercial_skill_names":["membership_info"],"frequency_case":true,"expected_skill_names":[],"allow_commercial":true}
+{"id":"skill_010","query":"我还是想购买会员","product_id":"aicoin","domain_hint":"membership","repeated_commercial_skill_names":["membership_purchase"],"frequency_case":true,"expected_skill_names":["membership_purchase"],"allow_commercial":true}

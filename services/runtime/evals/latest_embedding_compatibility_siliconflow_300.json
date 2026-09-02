@@ -1,0 +1,255 @@
+{
+  "remote_provider": "siliconflow",
+  "model": "BAAI/bge-m3",
+  "dataset": "eval_retrieval_sample_300.jsonl",
+  "total": 300,
+  "remote_encoding": {
+    "total_ms": 16550.35,
+    "mean_ms": 55.17
+  },
+  "same_text_local_remote_cosine": {
+    "count": 20,
+    "mean": 0.999955,
+    "min": 0.999944,
+    "max": 0.999964
+  },
+  "remote_query_against_current_document_vectors": {
+    "recall_at_5": 1.0,
+    "top1": 0.97,
+    "mrr_at_5": 0.9844,
+    "sample_top1_failures": [
+      {
+        "id": "retrieval_004",
+        "query": "关闭磁吸模式",
+        "expected": [
+          73
+        ],
+        "actual": [
+          2286,
+          73,
+          3436,
+          643,
+          833
+        ]
+      },
+      {
+        "id": "retrieval_012",
+        "query": "如何定制自定义指标",
+        "expected": [
+          592
+        ],
+        "actual": [
+          111,
+          592,
+          1894,
+          1094,
+          197
+        ]
+      },
+      {
+        "id": "retrieval_027",
+        "query": "需要解禁",
+        "expected": [
+          2359
+        ],
+        "actual": [
+          2209,
+          3477,
+          2359,
+          3339,
+          191
+        ]
+      },
+      {
+        "id": "retrieval_180",
+        "query": "个人简介怎样修改",
+        "expected": [
+          215
+        ],
+        "actual": [
+          202,
+          215,
+          986,
+          925,
+          3248
+        ]
+      },
+      {
+        "id": "retrieval_206",
+        "query": "全币种DCA触发条件一般有哪些",
+        "expected": [
+          2886
+        ],
+        "actual": [
+          2885,
+          2886,
+          2710,
+          2711,
+          2666
+        ]
+      },
+      {
+        "id": "retrieval_216",
+        "query": "币安AIPHA是什么意思",
+        "expected": [
+          2036
+        ],
+        "actual": [
+          2223,
+          2036,
+          3647,
+          205,
+          3145
+        ]
+      },
+      {
+        "id": "retrieval_234",
+        "query": "为什么策略面板的数据与交易所的数据不一致",
+        "expected": [
+          3101
+        ],
+        "actual": [
+          3005,
+          3101,
+          2963,
+          3026,
+          393
+        ]
+      },
+      {
+        "id": "retrieval_245",
+        "query": "指标选币中的“过滤方式”是什么",
+        "expected": [
+          2562
+        ],
+        "actual": [
+          2559,
+          2562,
+          2581,
+          2565,
+          2566
+        ]
+      },
+      {
+        "id": "retrieval_288",
+        "query": "API接口中的获取资讯列表，一次只能访问多少页数据",
+        "expected": [
+          3108
+        ],
+        "actual": [
+          3245,
+          3108,
+          2602,
+          3053,
+          2606
+        ]
+      }
+    ]
+  },
+  "remote_query_rrf_against_current_document_vectors": {
+    "recall_at_5": 1.0,
+    "top1": 0.9767,
+    "mrr_at_5": 0.9878,
+    "sample_top1_failures": [
+      {
+        "id": "retrieval_012",
+        "query": "如何定制自定义指标",
+        "expected": [
+          592
+        ],
+        "actual": [
+          111,
+          592,
+          283,
+          1894,
+          1094
+        ]
+      },
+      {
+        "id": "retrieval_094",
+        "query": "量比",
+        "expected": [
+          680
+        ],
+        "actual": [
+          238,
+          2101,
+          680,
+          2487,
+          2682
+        ]
+      },
+      {
+        "id": "retrieval_180",
+        "query": "个人简介怎样修改",
+        "expected": [
+          215
+        ],
+        "actual": [
+          202,
+          215,
+          986,
+          925,
+          3248
+        ]
+      },
+      {
+        "id": "retrieval_206",
+        "query": "全币种DCA触发条件一般有哪些",
+        "expected": [
+          2886
+        ],
+        "actual": [
+          2885,
+          2886,
+          2710,
+          2711,
+          2666
+        ]
+      },
+      {
+        "id": "retrieval_234",
+        "query": "为什么策略面板的数据与交易所的数据不一致",
+        "expected": [
+          3101
+        ],
+        "actual": [
+          3005,
+          3101,
+          2963,
+          3026,
+          393
+        ]
+      },
+      {
+        "id": "retrieval_245",
+        "query": "指标选币中的“过滤方式”是什么",
+        "expected": [
+          2562
+        ],
+        "actual": [
+          2559,
+          2562,
+          2581,
+          2566,
+          2565
+        ]
+      },
+      {
+        "id": "retrieval_288",
+        "query": "API接口中的获取资讯列表，一次只能访问多少页数据",
+        "expected": [
+          3108
+        ],
+        "actual": [
+          3245,
+          3108,
+          2602,
+          3053,
+          2606
+        ]
+      }
+    ]
+  },
+  "compatible_without_reembedding": true
+}

@@ -1,0 +1,497 @@
+[
+  {
+    "dataset": "eval_retrieval_holdout_300.jsonl",
+    "total": 300,
+    "top_k": 5,
+    "recall_at_k": 0.9833,
+    "top1_accuracy": 0.9533,
+    "mrr_at_k": 0.9678,
+    "query_encoding": {
+      "total_ms": 57726.42,
+      "mean_ms": 192.42
+    },
+    "vector_search": {
+      "mean_ms": 17.14,
+      "p95_ms": 22.87,
+      "max_ms": 74.74
+    },
+    "sample_top1_failures": [
+      {
+        "id": "holdout_002",
+        "query": "（PC端 ）",
+        "expected_faq_ids": [
+          2885
+        ],
+        "results": [
+          {
+            "faq_id": 1584,
+            "title": "什么是PC端 （PC）",
+            "score": 0.660894
+          },
+          {
+            "faq_id": 946,
+            "title": "云端布局的使用教程",
+            "score": 0.574296
+          },
+          {
+            "faq_id": 354,
+            "title": "测试用",
+            "score": 0.563317
+          },
+          {
+            "faq_id": 1321,
+            "title": "请问是不是我在pc端启动以后，pc端的策略就会同步到手机端的策略云了？",
+            "score": 0.55458
+          },
+          {
+            "faq_id": 1066,
+            "title": "PC端代理设置教程",
+            "score": 0.554036
+          }
+        ]
+      },
+      {
+        "id": "holdout_008",
+        "query": "开了PRO会员，要怎么使用？",
+        "expected_faq_ids": [
+          565
+        ],
+        "results": [
+          {
+            "faq_id": 843,
+            "title": "开通了pro会员怎么用",
+            "score": 0.757367
+          },
+          {
+            "faq_id": 565,
+            "title": "开了PRO会员，要怎么使用？",
+            "score": 0.749351
+          },
+          {
+            "faq_id": 1573,
+            "title": "如何开通PRO 会员",
+            "score": 0.724393
+          },
+          {
+            "faq_id": 593,
+            "title": "如何开通会员",
+            "score": 0.684371
+          },
+          {
+            "faq_id": 922,
+            "title": "PRO会员开通链接",
+            "score": 0.67417
+          }
+        ]
+      },
+      {
+        "id": "holdout_011",
+        "query": "以前安装的过期了",
+        "expected_faq_ids": [
+          185
+        ],
+        "results": [
+          {
+            "faq_id": 3490,
+            "title": "为什么IOS下载有过期时间？",
+            "score": 0.659206
+          },
+          {
+            "faq_id": 185,
+            "title": "AiCoin iOS 专业版提示已过期怎么办？",
+            "score": 0.655432
+          },
+          {
+            "faq_id": 3287,
+            "title": "止盈止损出现过期的情况怎么办？",
+            "score": 0.634499
+          },
+          {
+            "faq_id": 3321,
+            "title": "止盈止损单显示已过期",
+            "score": 0.619418
+          },
+          {
+            "faq_id": 1043,
+            "title": "为什么小编分享的BTC短线策略显示过期无法使用",
+            "score": 0.597309
+          }
+        ]
+      },
+      {
+        "id": "holdout_027",
+        "query": "PC端是否可以查看指标说明",
+        "expected_faq_ids": [
+          125
+        ],
+        "results": [
+          {
+            "faq_id": 60,
+            "title": "如何查看指标说明？",
+            "score": 0.760175
+          },
+          {
+            "faq_id": 545,
+            "title": "电脑端上的自定义指标可以在手机端显示出来吗？",
+            "score": 0.673739
+          },
+          {
+            "faq_id": 329,
+            "title": "开通了指标胜率，在哪里查看指标策略",
+            "score": 0.671378
+          },
+          {
+            "faq_id": 2324,
+            "title": "网页版怎么查看自定义指标？",
+            "score": 0.66418
+          },
+          {
+            "faq_id": 2091,
+            "title": "电脑创建的自定义指标，手机上能看到吗？",
+            "score": 0.657805
+          }
+        ]
+      },
+      {
+        "id": "holdout_028",
+        "query": "画线仅显示在当前周期",
+        "expected_faq_ids": [
+          90
+        ],
+        "results": [
+          {
+            "faq_id": 2455,
+            "title": "手机端画线怎么只看当前周期？/手机端画线怎么能只显示当前周期的画线？/如何看当前周期的画线？",
+            "score": 0.759078
+          },
+          {
+            "faq_id": 90,
+            "title": "如何使所有画线在切换周期时画线显示？",
+            "score": 0.742201
+          },
+          {
+            "faq_id": 3432,
+            "title": "手机端可以仅显示当前周期画的线吗？",
+            "score": 0.737789
+          },
+          {
+            "faq_id": 3603,
+            "title": "web端如何隐藏其他周期的画线",
+            "score": 0.671176
+          },
+          {
+            "faq_id": 2664,
+            "title": "k线上画图如何同步全周期？",
+            "score": 0.669053
+          }
+        ]
+      },
+      {
+        "id": "holdout_030",
+        "query": "为什么套利收益是负的?",
+        "expected_faq_ids": [
+          275
+        ],
+        "results": [
+          {
+            "faq_id": 416,
+            "title": "为什么套利开仓后一直都是负收益呢",
+            "score": 0.765024
+          },
+          {
+            "faq_id": 275,
+            "title": "为什么套利收益是负的?",
+            "score": 0.746534
+          },
+          {
+            "faq_id": 651,
+            "title": "套利净利润显示负数",
+            "score": 0.725296
+          },
+          {
+            "faq_id": 670,
+            "title": "什么是反向套利",
+            "score": 0.662069
+          },
+          {
+            "faq_id": 661,
+            "title": "正向套利原理",
+            "score": 0.660504
+          }
+        ]
+      },
+      {
+        "id": "holdout_046",
+        "query": "如何切换单向持仓",
+        "expected_faq_ids": [
+          2194
+        ],
+        "results": [
+          {
+            "faq_id": 3690,
+            "title": "api我想从单向持仓改双向持仓在哪改",
+            "score": 0.783766
+          },
+          {
+            "faq_id": 2194,
+            "title": "如何切换仓位模式？如何切换单向持仓？",
+            "score": 0.777385
+          },
+          {
+            "faq_id": 834,
+            "title": "我电脑端下单是全仓的怎么改成逐仓",
+            "score": 0.661613
+          },
+          {
+            "faq_id": 2193,
+            "title": "什么是仓位模式？什么是单向持仓？什么是双向持仓？",
+            "score": 0.659637
+          },
+          {
+            "faq_id": 180,
+            "title": "如何切换交易账户下单",
+            "score": 0.652188
+          }
+        ]
+      },
+      {
+        "id": "holdout_105",
+        "query": "Resistance Line)",
+        "expected_faq_ids": [
+          1518
+        ],
+        "results": [
+          {
+            "faq_id": 1843,
+            "title": "什么是智能撑压线(AI-Support/Resistance Line)",
+            "score": 0.420537
+          },
+          {
+            "faq_id": 1391,
+            "title": "我如果下单现货杠杆，你们能支持显示委单线、 委单记录、持仓线这些指标吗？",
+            "score": 0.416737
+          },
+          {
+            "faq_id": 1518,
+            "title": "什么是智能撑压线(AI-Support/Resistance Line)",
+            "score": 0.416284
+          },
+          {
+            "faq_id": 50,
+            "title": "是否支持组合K线和对比K线？",
+            "score": 0.41608
+          },
+          {
+            "faq_id": 1361,
+            "title": "价格通道如何使用？",
+            "score": 0.403537
+          }
+        ]
+      },
+      {
+        "id": "holdout_136",
+        "query": "DCA选TD触发还是RSI触发",
+        "expected_faq_ids": [
+          1194
+        ],
+        "results": [
+          {
+            "faq_id": 1968,
+            "title": "DCA策略的TD触发和RSI触发哪个好一点",
+            "score": 0.801924
+          },
+          {
+            "faq_id": 1194,
+            "title": "DCA选TD触发还是RSI触发？",
+            "score": 0.787334
+          },
+          {
+            "faq_id": 2665,
+            "title": "DCA中TD+RSI双指标信号触发有什么用？",
+            "score": 0.703119
+          },
+          {
+            "faq_id": 2662,
+            "title": "DCA怎么设置TD+RSI双指标信号触发？",
+            "score": 0.678464
+          },
+          {
+            "faq_id": 2886,
+            "title": "全币种DCA触发条件一般有哪些？（手机端）",
+            "score": 0.626491
+          }
+        ]
+      },
+      {
+        "id": "holdout_224",
+        "query": "有教程吗",
+        "expected_faq_ids": [
+          3037
+        ],
+        "results": [
+          {
+            "faq_id": 1105,
+            "title": "有没有挖矿教程",
+            "score": 0.660567
+          },
+          {
+            "faq_id": 711,
+            "title": "有AiCoin使用教程吗",
+            "score": 0.64686
+          },
+          {
+            "faq_id": 380,
+            "title": "能否提供一些套利教程参考？",
+            "score": 0.624911
+          },
+          {
+            "faq_id": 1689,
+            "title": "有策略云的使用教程吗",
+            "score": 0.623659
+          },
+          {
+            "faq_id": 983,
+            "title": "哪里可以快速找到VIP教程",
+            "score": 0.621169
+          }
+        ]
+      },
+      {
+        "id": "holdout_252",
+        "query": "如何操作",
+        "expected_faq_ids": [
+          3221
+        ],
+        "results": [
+          {
+            "faq_id": 2796,
+            "title": "如何使用右侧的“操作”按钮？",
+            "score": 0.645599
+          },
+          {
+            "faq_id": 3169,
+            "title": "我想在实盘运行中，每次都想把仓位全部平完，需要怎么操作",
+            "score": 0.614264
+          },
+          {
+            "faq_id": 2471,
+            "title": "三角套利开仓操作流程",
+            "score": 0.614218
+          },
+          {
+            "faq_id": 83,
+            "title": "如何进行反手下单",
+            "score": 0.611677
+          },
+          {
+            "faq_id": 77,
+            "title": "如何设置授权交易？",
+            "score": 0.605653
+          }
+        ]
+      },
+      {
+        "id": "holdout_262",
+        "query": "欧易的GMT",
+        "expected_faq_ids": [
+          568
+        ],
+        "results": [
+          {
+            "faq_id": 343,
+            "title": "为什么MACD指标数据总是会比欧易平台上的晚显示?",
+            "score": 0.558518
+          },
+          {
+            "faq_id": 3640,
+            "title": "欧易的X Launch是什么？",
+            "score": 0.541627
+          },
+          {
+            "faq_id": 1255,
+            "title": "为什么欧易ema的月K数据不一和原平台不一致",
+            "score": 0.531962
+          },
+          {
+            "faq_id": 301,
+            "title": "和欧易这些平台是合作关系吗？",
+            "score": 0.5221
+          },
+          {
+            "faq_id": 1387,
+            "title": "我已通过欧易内部转币到AiCoin账户，但是还没收到会员开通服务。",
+            "score": 0.517762
+          }
+        ]
+      },
+      {
+        "id": "holdout_275",
+        "query": "自选的上限是多少个",
+        "expected_faq_ids": [
+          597
+        ],
+        "results": [
+          {
+            "faq_id": 771,
+            "title": "自选数量上限",
+            "score": 0.791343
+          },
+          {
+            "faq_id": 597,
+            "title": "自选的上限是多少个",
+            "score": 0.781156
+          },
+          {
+            "faq_id": 772,
+            "title": "自选分组上限",
+            "score": 0.718955
+          },
+          {
+            "faq_id": 94,
+            "title": "如何添加自选？可以添加多少个自选？",
+            "score": 0.703329
+          },
+          {
+            "faq_id": 591,
+            "title": "会员到期后自选多出部分会被删除吗？",
+            "score": 0.648977
+          }
+        ]
+      },
+      {
+        "id": "holdout_279",
+        "query": "什么是大额成交列表 (Large Trades List)",
+        "expected_faq_ids": [
+          1516
+        ],
+        "results": [
+          {
+            "faq_id": 1841,
+            "title": "什么是大额成交列表 (Large Trades List)",
+            "score": 0.817277
+          },
+          {
+            "faq_id": 1516,
+            "title": "什么是大额成交列表 (Large Trades List)",
+            "score": 0.814512
+          },
+          {
+            "faq_id": 1839,
+            "title": "什么是大额成交（AI-Large Trades）",
+            "score": 0.701977
+          },
+          {
+            "faq_id": 1514,
+            "title": "什么是大额成交（AI-Large Trades）",
+            "score": 0.699208
+          },
+          {
+            "faq_id": 1838,
+            "title": "什么是主力大单列表 (Large Orders List)",
+            "score": 0.690339
+          }
+        ]
+      }
+    ]
+  }
+]

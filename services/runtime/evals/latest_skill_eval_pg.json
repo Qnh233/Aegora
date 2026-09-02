@@ -1,0 +1,555 @@
+{
+  "total": 10,
+  "correct": 10,
+  "injection_accuracy": 1.0,
+  "cross_product_misinjection_rate": 0.0,
+  "inactive_skill_injection_rate": 0.0,
+  "commercial_irrelevant_misinjection_rate": 0.0,
+  "max_injected_per_turn": 1,
+  "commercial_frequency_accuracy": 1.0,
+  "commercial_frequency_cases": 2,
+  "details": [
+    {
+      "id": "skill_001",
+      "query": "我想购买会员，有什么权益",
+      "expected": [
+        "membership_purchase"
+      ],
+      "actual": [
+        "membership_purchase"
+      ],
+      "passed": true,
+      "decisions": [
+        {
+          "id": 3,
+          "name": "signal_membership",
+          "retrieval_score": 0.695426,
+          "adjusted_score": 0.785426,
+          "decision": "missing_include_term"
+        },
+        {
+          "id": 4,
+          "name": "pro_membership",
+          "retrieval_score": 0.676899,
+          "adjusted_score": 0.766899,
+          "decision": "missing_include_term"
+        },
+        {
+          "id": 5,
+          "name": "strategy_membership",
+          "retrieval_score": 0.673084,
+          "adjusted_score": 0.763084,
+          "decision": "missing_include_term"
+        },
+        {
+          "id": 2,
+          "name": "membership_purchase",
+          "retrieval_score": 0.63054,
+          "adjusted_score": 0.71554,
+          "decision": "eligible"
+        },
+        {
+          "id": 1,
+          "name": "membership_info",
+          "retrieval_score": 0.594508,
+          "adjusted_score": 0.649508,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 7,
+          "name": "china_service",
+          "retrieval_score": 0.520024,
+          "adjusted_score": 0.620024,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 6,
+          "name": "exchange_auth",
+          "retrieval_score": 0.464744,
+          "adjusted_score": 0.559744,
+          "decision": "below_score_threshold"
+        }
+      ]
+    },
+    {
+      "id": "skill_002",
+      "query": "会员怎么升级",
+      "expected": [
+        "membership_purchase"
+      ],
+      "actual": [
+        "membership_purchase"
+      ],
+      "passed": true,
+      "decisions": [
+        {
+          "id": 2,
+          "name": "membership_purchase",
+          "retrieval_score": 0.676354,
+          "adjusted_score": 0.761354,
+          "decision": "eligible"
+        },
+        {
+          "id": 4,
+          "name": "pro_membership",
+          "retrieval_score": 0.576122,
+          "adjusted_score": 0.666122,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 3,
+          "name": "signal_membership",
+          "retrieval_score": 0.57126,
+          "adjusted_score": 0.66126,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 5,
+          "name": "strategy_membership",
+          "retrieval_score": 0.552634,
+          "adjusted_score": 0.642634,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 1,
+          "name": "membership_info",
+          "retrieval_score": 0.524488,
+          "adjusted_score": 0.579488,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 6,
+          "name": "exchange_auth",
+          "retrieval_score": 0.470668,
+          "adjusted_score": 0.565668,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 7,
+          "name": "china_service",
+          "retrieval_score": 0.430105,
+          "adjusted_score": 0.530105,
+          "decision": "below_score_threshold"
+        }
+      ]
+    },
+    {
+      "id": "skill_003",
+      "query": "这个功能受限了，有什么解决办法",
+      "expected": [],
+      "actual": [],
+      "passed": true,
+      "decisions": [
+        {
+          "id": 4,
+          "name": "pro_membership",
+          "retrieval_score": 0.512747,
+          "adjusted_score": 0.602747,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 2,
+          "name": "membership_purchase",
+          "retrieval_score": 0.501019,
+          "adjusted_score": 0.586019,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 3,
+          "name": "signal_membership",
+          "retrieval_score": 0.494816,
+          "adjusted_score": 0.584816,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 6,
+          "name": "exchange_auth",
+          "retrieval_score": 0.494047,
+          "adjusted_score": 0.589047,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 7,
+          "name": "china_service",
+          "retrieval_score": 0.491224,
+          "adjusted_score": 0.591224,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 5,
+          "name": "strategy_membership",
+          "retrieval_score": 0.478149,
+          "adjusted_score": 0.568149,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 1,
+          "name": "membership_info",
+          "retrieval_score": 0.432264,
+          "adjusted_score": 0.487264,
+          "decision": "below_score_threshold"
+        }
+      ]
+    },
+    {
+      "id": "skill_004",
+      "query": "如何设置悬浮窗",
+      "expected": [],
+      "actual": [],
+      "passed": true,
+      "decisions": [
+        {
+          "id": 2,
+          "name": "membership_purchase",
+          "retrieval_score": 0.408395,
+          "adjusted_score": 0.493395,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 3,
+          "name": "signal_membership",
+          "retrieval_score": 0.383233,
+          "adjusted_score": 0.473233,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 5,
+          "name": "strategy_membership",
+          "retrieval_score": 0.378891,
+          "adjusted_score": 0.468891,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 6,
+          "name": "exchange_auth",
+          "retrieval_score": 0.364792,
+          "adjusted_score": 0.459792,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 4,
+          "name": "pro_membership",
+          "retrieval_score": 0.360033,
+          "adjusted_score": 0.450033,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 1,
+          "name": "membership_info",
+          "retrieval_score": 0.338975,
+          "adjusted_score": 0.393975,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 7,
+          "name": "china_service",
+          "retrieval_score": 0.318709,
+          "adjusted_score": 0.418709,
+          "decision": "below_score_threshold"
+        }
+      ]
+    },
+    {
+      "id": "skill_005",
+      "query": "我要投诉会员购买问题",
+      "expected": [],
+      "actual": [],
+      "passed": true,
+      "decisions": [
+        {
+          "id": 2,
+          "name": "membership_purchase",
+          "retrieval_score": 0.60728,
+          "adjusted_score": 0.69228,
+          "decision": "excluded_by_term"
+        },
+        {
+          "id": 4,
+          "name": "pro_membership",
+          "retrieval_score": 0.579252,
+          "adjusted_score": 0.669252,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 3,
+          "name": "signal_membership",
+          "retrieval_score": 0.579071,
+          "adjusted_score": 0.669071,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 5,
+          "name": "strategy_membership",
+          "retrieval_score": 0.536221,
+          "adjusted_score": 0.626221,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 1,
+          "name": "membership_info",
+          "retrieval_score": 0.52832,
+          "adjusted_score": 0.58332,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 7,
+          "name": "china_service",
+          "retrieval_score": 0.50109,
+          "adjusted_score": 0.60109,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 6,
+          "name": "exchange_auth",
+          "retrieval_score": 0.463044,
+          "adjusted_score": 0.558044,
+          "decision": "below_score_threshold"
+        }
+      ]
+    },
+    {
+      "id": "skill_006",
+      "query": "你是谁",
+      "expected": [],
+      "actual": [],
+      "passed": true,
+      "decisions": [
+        {
+          "id": 6,
+          "name": "exchange_auth",
+          "retrieval_score": 0.324386,
+          "adjusted_score": 0.419386,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 7,
+          "name": "china_service",
+          "retrieval_score": 0.31096,
+          "adjusted_score": 0.41096,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 5,
+          "name": "strategy_membership",
+          "retrieval_score": 0.302549,
+          "adjusted_score": 0.392549,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 4,
+          "name": "pro_membership",
+          "retrieval_score": 0.291146,
+          "adjusted_score": 0.381146,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 2,
+          "name": "membership_purchase",
+          "retrieval_score": 0.287431,
+          "adjusted_score": 0.372431,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 3,
+          "name": "signal_membership",
+          "retrieval_score": 0.286962,
+          "adjusted_score": 0.376962,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 1,
+          "name": "membership_info",
+          "retrieval_score": 0.267779,
+          "adjusted_score": 0.322779,
+          "decision": "below_score_threshold"
+        }
+      ]
+    },
+    {
+      "id": "skill_007",
+      "query": "会员价格是多少",
+      "expected": [],
+      "actual": [],
+      "passed": true,
+      "decisions": []
+    },
+    {
+      "id": "skill_008",
+      "query": "充值会员没到账，帮我查订单",
+      "expected": [],
+      "actual": [],
+      "passed": true,
+      "decisions": [
+        {
+          "id": 2,
+          "name": "membership_purchase",
+          "retrieval_score": 0.523892,
+          "adjusted_score": 0.608892,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 3,
+          "name": "signal_membership",
+          "retrieval_score": 0.51696,
+          "adjusted_score": 0.60696,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 4,
+          "name": "pro_membership",
+          "retrieval_score": 0.487428,
+          "adjusted_score": 0.577428,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 5,
+          "name": "strategy_membership",
+          "retrieval_score": 0.457376,
+          "adjusted_score": 0.547376,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 6,
+          "name": "exchange_auth",
+          "retrieval_score": 0.456384,
+          "adjusted_score": 0.551384,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 1,
+          "name": "membership_info",
+          "retrieval_score": 0.443854,
+          "adjusted_score": 0.498854,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 7,
+          "name": "china_service",
+          "retrieval_score": 0.438816,
+          "adjusted_score": 0.538816,
+          "decision": "below_score_threshold"
+        }
+      ]
+    },
+    {
+      "id": "skill_009",
+      "query": "这个功能受限了",
+      "expected": [],
+      "actual": [],
+      "passed": true,
+      "decisions": [
+        {
+          "id": 7,
+          "name": "china_service",
+          "retrieval_score": 0.481871,
+          "adjusted_score": 0.581871,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 4,
+          "name": "pro_membership",
+          "retrieval_score": 0.480391,
+          "adjusted_score": 0.570391,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 2,
+          "name": "membership_purchase",
+          "retrieval_score": 0.469091,
+          "adjusted_score": 0.554091,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 6,
+          "name": "exchange_auth",
+          "retrieval_score": 0.458189,
+          "adjusted_score": 0.553189,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 3,
+          "name": "signal_membership",
+          "retrieval_score": 0.453118,
+          "adjusted_score": 0.543118,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 5,
+          "name": "strategy_membership",
+          "retrieval_score": 0.448249,
+          "adjusted_score": 0.538249,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 1,
+          "name": "membership_info",
+          "retrieval_score": 0.412013,
+          "adjusted_score": 0.467013,
+          "decision": "below_score_threshold"
+        }
+      ]
+    },
+    {
+      "id": "skill_010",
+      "query": "我还是想购买会员",
+      "expected": [
+        "membership_purchase"
+      ],
+      "actual": [
+        "membership_purchase"
+      ],
+      "passed": true,
+      "decisions": [
+        {
+          "id": 2,
+          "name": "membership_purchase",
+          "retrieval_score": 0.641525,
+          "adjusted_score": 0.726525,
+          "decision": "eligible"
+        },
+        {
+          "id": 4,
+          "name": "pro_membership",
+          "retrieval_score": 0.609037,
+          "adjusted_score": 0.699037,
+          "decision": "missing_include_term"
+        },
+        {
+          "id": 3,
+          "name": "signal_membership",
+          "retrieval_score": 0.599482,
+          "adjusted_score": 0.689482,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 5,
+          "name": "strategy_membership",
+          "retrieval_score": 0.560955,
+          "adjusted_score": 0.650955,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 1,
+          "name": "membership_info",
+          "retrieval_score": 0.551338,
+          "adjusted_score": 0.606338,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 7,
+          "name": "china_service",
+          "retrieval_score": 0.49758,
+          "adjusted_score": 0.59758,
+          "decision": "below_score_threshold"
+        },
+        {
+          "id": 6,
+          "name": "exchange_auth",
+          "retrieval_score": 0.455288,
+          "adjusted_score": 0.550288,
+          "decision": "below_score_threshold"
+        }
+      ]
+    }
+  ]
+}

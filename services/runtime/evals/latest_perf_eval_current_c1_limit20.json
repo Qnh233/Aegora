@@ -1,0 +1,106 @@
+{
+  "total": 20,
+  "ok": 20,
+  "success_rate": 1.0,
+  "concurrency": 1,
+  "wall_ms": 64831.77,
+  "throughput_qps": 0.3085,
+  "latency_ms": {
+    "min": 0.07,
+    "p50": 1897.03,
+    "p90": 9771.01,
+    "p95": 12658.34,
+    "p99": 15201.13,
+    "max": 15836.82,
+    "mean": 3241.55
+  },
+  "route_counts": {
+    "clarify": 11,
+    "chat": 4,
+    "faq_answer": 4,
+    "handoff": 1
+  },
+  "slowest": [
+    {
+      "id": "perf_real_004",
+      "ok": true,
+      "latency_ms": 15836.824574013008,
+      "route": "faq_answer",
+      "status": "completed",
+      "evidence_count": 5
+    },
+    {
+      "id": "perf_real_017",
+      "ok": true,
+      "latency_ms": 12491.052035999019,
+      "route": "faq_answer",
+      "status": "completed",
+      "evidence_count": 5
+    },
+    {
+      "id": "perf_real_006",
+      "ok": true,
+      "latency_ms": 9468.786489014747,
+      "route": "faq_answer",
+      "status": "completed",
+      "evidence_count": 5
+    },
+    {
+      "id": "perf_real_010",
+      "ok": true,
+      "latency_ms": 5707.189690991072,
+      "route": "chat",
+      "status": "completed",
+      "evidence_count": 0
+    },
+    {
+      "id": "perf_real_008",
+      "ok": true,
+      "latency_ms": 4740.465746988775,
+      "route": "chat",
+      "status": "completed",
+      "evidence_count": 0
+    },
+    {
+      "id": "perf_real_019",
+      "ok": true,
+      "latency_ms": 4620.734238007572,
+      "route": "faq_answer",
+      "status": "completed",
+      "evidence_count": 5
+    },
+    {
+      "id": "perf_real_020",
+      "ok": true,
+      "latency_ms": 3178.168084996287,
+      "route": "clarify",
+      "status": "completed",
+      "evidence_count": 0
+    },
+    {
+      "id": "perf_real_009",
+      "ok": true,
+      "latency_ms": 2515.8942109846976,
+      "route": "chat",
+      "status": "completed",
+      "evidence_count": 0
+    },
+    {
+      "id": "perf_real_003",
+      "ok": true,
+      "latency_ms": 2141.0905399825424,
+      "route": "chat",
+      "status": "completed",
+      "evidence_count": 0
+    },
+    {
+      "id": "perf_real_007",
+      "ok": true,
+      "latency_ms": 1993.357924016891,
+      "route": "clarify",
+      "status": "completed",
+      "evidence_count": 0
+    }
+  ],
+  "errors": []
+}

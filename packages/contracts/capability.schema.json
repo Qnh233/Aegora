@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aegora.dev/contracts/capability.schema.json",
+  "title": "Aegora Callable Capability",
+  "type": "object",
+  "required": ["tool_id", "source", "name", "input_schema"],
+  "properties": {
+    "tool_id": {"type": "string", "minLength": 1},
+    "source": {"enum": ["local", "mcp", "http", "workflow", "workflow_agent"]},
+    "name": {"type": "string", "minLength": 1},
+    "description": {"type": "string"},
+    "runner_tool_id": {"type": ["string", "null"]},
+    "runner_name": {"type": ["string", "null"]},
+    "mcp_connection_id": {"type": ["string", "null"]},
+    "input_schema": {"type": "object"},
+    "scope": {"type": "object"},
+    "read_only": {"type": "boolean"},
+    "idempotent": {"type": "boolean"},
+    "parallel_safe": {"type": "boolean"},
+    "requires_approval": {"type": "boolean"},
+    "side_effect_level": {"type": "string"},
+    "data_sensitivity": {"type": "string"},
+    "network_access": {"type": "string"},
+    "timeout_ms": {"type": "integer", "minimum": 1},
+    "version": {"type": ["string", "null"]},
+    "manifest_hash": {"type": ["string", "null"]}
+  },
+  "additionalProperties": true
+}
+

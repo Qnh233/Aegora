@@ -1,0 +1,56 @@
+# 项目实际分类不直接等同 Strapi 原始分类。
+# raw category 仍保存在 faq_categories.name，project_category 用于 Agent 路由、评估和统计。
+
+[project_categories]
+chart_market = "行情、K线、画线、盯盘、PRO 图表相关功能"
+alerting = "价格预警、信号预警、语音预警和推送提醒"
+custom_indicator = "自定义指标、指标胜率、回测、策略和 AI 指标工具"
+trading_auth = "交易授权、API、实盘交易、多账户下单"
+quant_tools = "套利、网格、DCA、量化工具"
+account_member = "会员、权限、账号状态、风控、解封、禁言"
+app_access = "下载、安装、网页版、语言和客户端访问"
+community_content = "快讯、广场、发文、个人简介等社区内容"
+ai_product = "AI 工具和 AiBasin"
+other = "暂未归类或需要后续 Dream/失败样本细分"
+
+[raw_to_project]
+"功能设置" = "chart_market"
+"实时盯盘" = "chart_market"
+"PRO 版K线" = "chart_market"
+"画线工具" = "chart_market"
+"指标设置" = "chart_market"
+"自选" = "chart_market"
+
+"预警" = "alerting"
+"信号预警" = "alerting"
+"语音预警" = "alerting"
+
+"自定义指标" = "custom_indicator"
+"指标胜率" = "custom_indicator"
+"回测" = "custom_indicator"
+"策略云" = "custom_indicator"
+
+"授权交易" = "trading_auth"
+"实盘交易" = "trading_auth"
+"多账户下单" = "trading_auth"
+"交易所相关" = "trading_auth"
+
+"套利工具" = "quant_tools"
+"网格" = "quant_tools"
+"DCA" = "quant_tools"
+"抢新开盘" = "quant_tools"
+
+"会员" = "account_member"
+"热门问题" = "account_member"
+
+"下载" = "app_access"
+"网页版" = "app_access"
+
+"快讯" = "community_content"
+"广场" = "community_content"
+"个人简介" = "community_content"
+
+"AI工具" = "ai_product"
+"AiBasin" = "ai_product"
+
+"未分类" = "other"

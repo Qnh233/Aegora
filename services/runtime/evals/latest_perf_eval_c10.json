@@ -1,0 +1,105 @@
+{
+  "total": 100,
+  "ok": 100,
+  "success_rate": 1.0,
+  "concurrency": 10,
+  "wall_ms": 291.97,
+  "throughput_qps": 342.4959,
+  "latency_ms": {
+    "min": 0.07,
+    "p50": 23.2,
+    "p90": 36.61,
+    "p95": 49.63,
+    "p99": 60.27,
+    "max": 240.13,
+    "mean": 27.85
+  },
+  "route_counts": {
+    "clarify": 9,
+    "handoff": 27,
+    "faq_answer": 64
+  },
+  "slowest": [
+    {
+      "id": "perf_real_028",
+      "ok": true,
+      "latency_ms": 240.12615001993254,
+      "route": "handoff",
+      "status": "completed",
+      "evidence_count": 0
+    },
+    {
+      "id": "perf_faq_084",
+      "ok": true,
+      "latency_ms": 58.45585200586356,
+      "route": "faq_answer",
+      "status": "completed",
+      "evidence_count": 1
+    },
+    {
+      "id": "perf_faq_083",
+      "ok": true,
+      "latency_ms": 54.03310098336078,
+      "route": "faq_answer",
+      "status": "completed",
+      "evidence_count": 1
+    },
+    {
+      "id": "perf_faq_081",
+      "ok": true,
+      "latency_ms": 52.76506100199185,
+      "route": "faq_answer",
+      "status": "completed",
+      "evidence_count": 1
+    },
+    {
+      "id": "perf_faq_082",
+      "ok": true,
+      "latency_ms": 50.980522006284446,
+      "route": "faq_answer",
+      "status": "completed",
+      "evidence_count": 1
+    },
+    {
+      "id": "perf_faq_085",
+      "ok": true,
+      "latency_ms": 49.56154798856005,
+      "route": "faq_answer",
+      "status": "completed",
+      "evidence_count": 1
+    },
+    {
+      "id": "perf_faq_086",
+      "ok": true,
+      "latency_ms": 44.56500802189112,
+      "route": "faq_answer",
+      "status": "completed",
+      "evidence_count": 1
+    },
+    {
+      "id": "perf_faq_088",
+      "ok": true,
+      "latency_ms": 44.414653995772824,
+      "route": "faq_answer",
+      "status": "completed",
+      "evidence_count": 1
+    },
+    {
+      "id": "perf_faq_080",
+      "ok": true,
+      "latency_ms": 44.081622996600345,
+      "route": "faq_answer",
+      "status": "completed",
+      "evidence_count": 2
+    },
+    {
+      "id": "perf_faq_087",
+      "ok": true,
+      "latency_ms": 43.300846009515226,
+      "route": "faq_answer",
+      "status": "completed",
+      "evidence_count": 1
+    }
+  ],
+  "errors": []
+}

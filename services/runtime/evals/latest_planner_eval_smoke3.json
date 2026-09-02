@@ -1,0 +1,31 @@
+[
+  {
+    "dataset": "real:planner:eval_core_100.jsonl",
+    "total": 3,
+    "route_accuracy": 1.0,
+    "route_accuracy_normalized": 1.0,
+    "faq_recall_at_5": 1.0,
+    "faq_top1": 1.0,
+    "faq_mrr_at_5": 1.0,
+    "must_include_pass": 0.6667,
+    "must_not_include_pass": 1.0,
+    "scored": {
+      "route": 3,
+      "faq": 3,
+      "must_include": 3,
+      "must_not_include": 3
+    },
+    "sample_failures": [
+      {
+        "id": "faq_001",
+        "query": "网格图可以取消吗",
+        "kind": "must_include",
+        "missing": [
+          "背景网格设置方法如下",
+          "线右上方设置"
+        ],
+        "answer": "可以取消。在 PC 端，点击 K 线右上角设置 -> K 线设置 -> 图表颜色 -> 取消勾选垂直坐标轴和水平辅助线；在 APP 端，进入 K 线页面点击右上角设置，下拉关闭或打开网格。"
+      }
+    ]
+  }
+]

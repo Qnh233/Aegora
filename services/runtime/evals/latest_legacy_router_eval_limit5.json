@@ -1,0 +1,93 @@
+[
+  {
+    "dataset": "real:legacy_router:eval_core_100.jsonl",
+    "total": 5,
+    "route_accuracy": 1.0,
+    "route_accuracy_normalized": 1.0,
+    "faq_recall_at_5": 1.0,
+    "faq_top1": 1.0,
+    "faq_mrr_at_5": 1.0,
+    "must_include_pass": 1.0,
+    "must_not_include_pass": 1.0,
+    "scored": {
+      "route": 5,
+      "faq": 5,
+      "must_include": 5,
+      "must_not_include": 5
+    },
+    "sample_failures": []
+  },
+  {
+    "dataset": "real:legacy_router:eval_retrieval_sample_300.jsonl",
+    "total": 5,
+    "route_accuracy": 1.0,
+    "route_accuracy_normalized": 1.0,
+    "faq_recall_at_5": 1.0,
+    "faq_top1": 1.0,
+    "faq_mrr_at_5": 1.0,
+    "must_include_pass": null,
+    "must_not_include_pass": null,
+    "scored": {
+      "route": 5,
+      "faq": 5,
+      "must_include": 0,
+      "must_not_include": 0
+    },
+    "sample_failures": []
+  },
+  {
+    "dataset": "real:legacy_router:eval_bad_feedback_100.jsonl",
+    "total": 5,
+    "route_accuracy": 0.6,
+    "route_accuracy_normalized": 0.6,
+    "faq_recall_at_5": null,
+    "faq_top1": null,
+    "faq_mrr_at_5": null,
+    "must_include_pass": null,
+    "must_not_include_pass": 1.0,
+    "scored": {
+      "route": 5,
+      "faq": 0,
+      "must_include": 0,
+      "must_not_include": 5
+    },
+    "sample_failures": [
+      {
+        "id": "bad_feedback_001",
+        "query": "你是人工客服吗",
+        "kind": "route",
+        "expected": "clarify",
+        "actual": "chat",
+        "normalized_actual": "chat",
+        "answer": "这个问题不属于 AiCoin 产品使用支持范围。我主要负责解答 AiCoin 的功能设置、授权交易、会员、预警、K线和常见操作问题；如果你愿意，也可以把遇到的产品问题直接发给我。"
+      },
+      {
+        "id": "bad_feedback_004",
+        "query": "为什么画线只能跟着K线走不能自由画",
+        "kind": "route",
+        "expected": "clarify",
+        "actual": "faq_answer",
+        "normalized_actual": "faq_answer",
+        "answer": "您好，点击图示”磁铁“ 符号关闭磁吸模式，蓝色为选中状态。\n磁吸模式可以使画线时点位主动吸附最近K线的开高低收值。\n\n您可按操作图指示试一下"
+      }
+    ]
+  },
+  {
+    "dataset": "real:legacy_router:eval_security_50.jsonl",
+    "total": 5,
+    "route_accuracy": 0.0,
+    "route_accuracy_normalized": 1.0,
+    "faq_recall_at_5": null,
+    "faq_top1": null,
+    "faq_mrr_at_5": null,
+    "must_include_pass": null,
+    "must_not_include_pass": 1.0,
+    "scored": {
+      "route": 5,
+      "faq": 0,
+      "must_include": 0,
+      "must_not_include": 5
+    },
+    "sample_failures": []
+  }
+]

@@ -1,0 +1,28 @@
+{
+  "kind": "collectionType",
+  "collectionName": "agent_chat_messages",
+  "info": {
+    "singularName": "agent-chat-message",
+    "pluralName": "agent-chat-messages",
+    "displayName": "Agent 消息"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "message_key": {"type": "string", "required": true, "unique": true},
+    "session_id": {"type": "string", "required": true},
+    "user_id": {"type": "string", "required": true},
+    "trace_id": {"type": "string", "required": true},
+    "role": {"type": "enumeration", "enum": ["user", "assistant"], "required": true},
+    "content": {"type": "text", "required": true},
+    "route": {"type": "string"},
+    "intent": {"type": "json"},
+    "retrieved_faq_ids": {"type": "json"},
+    "tool_calls": {"type": "json"},
+    "observability": {"type": "json"},
+    "latency_ms": {"type": "integer"},
+    "source": {"type": "string"},
+    "metadata": {"type": "json"}
+  }
+}

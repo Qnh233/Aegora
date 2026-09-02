@@ -1,0 +1,145 @@
+[
+  {
+    "name": "membership_info",
+    "title": "AiCoin 通用会员介绍",
+    "description": "用户泛化咨询 AiCoin 会员类型、会员功能、价格或通用权益时，介绍会员体系并引导查询最新官方信息。",
+    "content": "先直接回答用户的会员问题，再按需概括 AiCoin 会员体系：信号预警会员侧重指标与形态信号提醒；PRO 版侧重 K 线、主力数据和高级分析工具；指标胜率会员侧重量化策略信号。用户询问价格、套餐、权益数量或有效期时，必须调用 FAQ/RAG 或业务工具获取最新事实，不得仅依据本 Skill 编造。需要查看更多会员信息时，可在有知识库证据支持时提供官方会员页面。",
+    "product_id": "aicoin",
+    "domain": null,
+    "skill_type": "commercial",
+    "source": "manual",
+    "priority": 5,
+    "trigger_rules": {
+      "include_terms": ["会员", "VIP"],
+      "exclude_terms": ["信号预警", "PRO版", "PRO 版", "指标胜率", "购买", "开通", "升级", "续费", "投诉", "没到账", "退款"],
+      "trigger_examples": ["AiCoin会员有什么功能", "会员有哪些类型", "会员价格是多少"]
+    },
+    "metadata": {
+      "legacy_intents": ["membership_info", "membership_other"],
+      "owner": "customer-service"
+    }
+  },
+  {
+    "name": "membership_purchase",
+    "title": "AiCoin 会员购买与升级引导",
+    "description": "用户明确想购买、开通、续费或升级 AiCoin 会员时，提供克制的购买引导。",
+    "content": "用户已明确表达购买、开通、续费或升级意愿。先确认用户关注的功能，再引导其通过 AiCoin 官网会员页面或 APP 内会员页面查看并选择套餐。不要替用户断言最适合的套餐；可按需求说明方向：信号提醒关注信号预警会员，K 线和主力分析关注 PRO 版，量化策略信号关注指标胜率会员。价格、优惠、支付方式和购买链接必须来自 FAQ/RAG 或业务工具。",
+    "product_id": "aicoin",
+    "domain": null,
+    "skill_type": "commercial",
+    "source": "manual",
+    "priority": 35,
+    "trigger_rules": {
+      "include_terms": ["购买", "开通", "升级", "续费", "怎么买"],
+      "exclude_terms": ["投诉", "没到账", "退款"],
+      "explicit_intents": ["购买", "开通", "升级", "续费", "怎么买"],
+      "trigger_examples": ["我想购买会员", "会员怎么开通", "如何升级PRO版"]
+    },
+    "metadata": {
+      "legacy_intents": ["membership_purchase"],
+      "owner": "customer-service"
+    }
+  },
+  {
+    "name": "signal_membership",
+    "title": "信号预警会员介绍",
+    "description": "用户询问专有产品“信号预警”会员的功能、权益或获取方式时使用。",
+    "content": "围绕“信号预警会员”回答，并优先调用 FAQ/RAG 获取最新权益。可说明其关注方向包括指标信号、形态信号、K 线买卖信号展示和提醒；具体支持的指标、形态、直播、教学、定制指标或专家答疑等权益，只有在知识库证据支持时才能列出。用户询问如何获取、价格或购买方式时，继续检索对应 FAQ，不得编造。",
+    "product_id": "aicoin",
+    "domain": null,
+    "skill_type": "commercial",
+    "source": "manual",
+    "priority": 40,
+    "trigger_rules": {
+      "include_terms": ["信号预警"],
+      "exclude_terms": ["投诉", "没到账", "退款"],
+      "strong_related_terms": ["信号预警"],
+      "trigger_examples": ["信号预警会员有什么权益", "信号预警是什么", "怎么买信号预警会员"]
+    },
+    "metadata": {
+      "legacy_intents": ["signal_membership"],
+      "owner": "customer-service"
+    }
+  },
+  {
+    "name": "pro_membership",
+    "title": "PRO 版会员介绍",
+    "description": "用户询问专有产品“PRO版”会员的功能、适用人群、权益或获取方式时使用。",
+    "content": "围绕“PRO 版会员”回答，并优先调用 FAQ/RAG 获取最新权益。可说明其关注方向是 K 线、主力数据和高级市场分析；主力数据、全量深度、智能撑压线、自定义周期、同屏多窗和更多历史 K 线等具体能力，只有在知识库证据支持时才能列出。用户询问价格、购买或开通方式时，继续检索对应 FAQ，不得编造。",
+    "product_id": "aicoin",
+    "domain": null,
+    "skill_type": "commercial",
+    "source": "manual",
+    "priority": 40,
+    "trigger_rules": {
+      "include_terms": ["PRO版", "PRO 版", "pro版", "pro 版"],
+      "exclude_terms": ["投诉", "没到账", "退款"],
+      "strong_related_terms": ["PRO版", "PRO 版", "pro版", "pro 版"],
+      "trigger_examples": ["PRO版会员有什么功能", "PRO版适合谁", "如何购买PRO版"]
+    },
+    "metadata": {
+      "legacy_intents": ["pro_membership"],
+      "owner": "customer-service"
+    }
+  },
+  {
+    "name": "strategy_membership",
+    "title": "指标胜率会员介绍",
+    "description": "用户询问专有产品“指标胜率”会员的策略能力、权益或获取方式时使用。",
+    "content": "围绕“指标胜率会员”回答，并优先调用 FAQ/RAG 获取最新权益。可说明其关注方向是量化策略信号、买卖提醒和策略运行；合约策略、现货策略、K 线买卖点位与策略云服务等具体能力，只有在知识库证据支持时才能列出。用户询问价格、购买或开通方式时，继续检索对应 FAQ，不得编造。",
+    "product_id": "aicoin",
+    "domain": null,
+    "skill_type": "commercial",
+    "source": "manual",
+    "priority": 40,
+    "trigger_rules": {
+      "include_terms": ["指标胜率"],
+      "exclude_terms": ["投诉", "没到账", "退款"],
+      "strong_related_terms": ["指标胜率"],
+      "trigger_examples": ["指标胜率会员有什么权益", "指标胜率是什么", "指标胜率会员怎么买"]
+    },
+    "metadata": {
+      "legacy_intents": ["strategy_membership"],
+      "owner": "customer-service"
+    }
+  },
+  {
+    "name": "exchange_auth",
+    "title": "交易所授权教程检索策略",
+    "description": "用户询问币安、欧易、火币等交易所的 APP、PC、快速、标准或 API 授权教程时，拆解条件并完整检索对应教程。",
+    "content": "必须调用 FAQ/RAG 获取交易所授权教程链接和标题，不得凭经验编造。识别平台：APP、手机、移动、安卓、iOS 表示 APP 端；PC、电脑、桌面、浏览器表示 PC 端；未指定平台时同时检索两端。识别方式：快速表示快速授权；标准、详细、API 表示标准授权；未指定方式时同时检索快速与标准授权。用户同时指定方式和平台时只返回对应教程。不要反问已经能够从原问题识别出的条件，也不要只返回部分匹配链接。",
+    "product_id": "aicoin",
+    "domain": null,
+    "skill_type": "workflow",
+    "source": "manual",
+    "priority": 45,
+    "trigger_rules": {
+      "include_terms": ["授权"],
+      "exclude_terms": ["取消", "删除", "解除"],
+      "trigger_examples": ["币安app授权", "欧易快速授权", "火币API授权", "交易所授权教程"]
+    },
+    "metadata": {
+      "legacy_intents": ["exchange_auth"],
+      "owner": "customer-service"
+    }
+  },
+  {
+    "name": "china_service",
+    "title": "中国用户服务范围说明",
+    "description": "用户询问 AiCoin 是否为中国、中国大陆或国内用户提供服务时使用。",
+    "content": "对于用户询问 AiCoin 是否向中国或中国大陆用户提供服务，明确回答：AiCoin 目前不向中国用户提供服务。回答保持简洁，不延伸提供规避地区限制、绕过访问控制或注册限制的方法；可继续回答其他合规的产品一般问题。",
+    "product_id": "aicoin",
+    "domain": null,
+    "skill_type": "safety",
+    "source": "manual",
+    "priority": 50,
+    "trigger_rules": {
+      "include_terms": ["中国用户", "中国大陆", "大陆用户", "国内用户", "中国地区", "大陆能用", "国内能用"],
+      "trigger_examples": ["AiCoin为中国用户提供服务吗", "中国大陆能用AiCoin吗", "国内用户可以注册吗"]
+    },
+    "metadata": {
+      "legacy_intents": ["china_service"],
+      "owner": "customer-service"
+    }
+  }
+]

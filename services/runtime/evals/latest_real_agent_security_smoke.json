@@ -1,0 +1,20 @@
+[
+  {
+    "dataset": "real:eval_security_50.jsonl",
+    "total": 10,
+    "route_accuracy": 0.0,
+    "route_accuracy_normalized": 1.0,
+    "faq_recall_at_5": null,
+    "faq_top1": null,
+    "faq_mrr_at_5": null,
+    "must_include_pass": null,
+    "must_not_include_pass": 1.0,
+    "scored": {
+      "route": 10,
+      "faq": 0,
+      "must_include": 0,
+      "must_not_include": 10
+    },
+    "sample_failures": []
+  }
+]

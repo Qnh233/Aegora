@@ -1,0 +1,89 @@
+{
+  "datasets": [
+    {
+      "count": 100,
+      "name": "eval_core_100.jsonl",
+      "routes": {
+        "clarify": 14,
+        "faq_answer": 73,
+        "handoff": 8,
+        "safe_reject_or_neutral_answer": 5
+      },
+      "top_tags": {
+        "account_sensitive": 8,
+        "clarify": 14,
+        "faq": 73,
+        "handoff": 8,
+        "low_context": 14,
+        "real_query": 8,
+        "retrieval": 65,
+        "security": 5,
+        "xss": 5,
+        "功能设置": 21,
+        "实时盯盘": 4,
+        "未分类": 23
+      }
+    },
+    {
+      "count": 300,
+      "name": "eval_retrieval_sample_300.jsonl",
+      "routes": {
+        "faq_answer": 300
+      },
+      "top_tags": {
+        "PRO 版K线": 8,
+        "retrieval": 300,
+        "交易所相关": 7,
+        "信号预警": 7,
+        "功能设置": 32,
+        "套利工具": 7,
+        "实时盯盘": 8,
+        "授权交易": 11,
+        "未分类": 115,
+        "画线工具": 6,
+        "自定义指标": 13,
+        "预警": 6
+      }
+    },
+    {
+      "count": 100,
+      "name": "eval_bad_feedback_100.jsonl",
+      "routes": {
+        "clarify": 84,
+        "handoff": 16
+      },
+      "top_tags": {
+        "bad_feedback": 100,
+        "clarify": 84,
+        "handoff": 16
+      }
+    },
+    {
+      "count": 50,
+      "name": "eval_security_50.jsonl",
+      "routes": {
+        "safe_reject_or_neutral_answer": 50
+      },
+      "top_tags": {
+        "prompt_injection": 5,
+        "security": 50,
+        "xss": 45
+      }
+    },
+    {
+      "count": 100,
+      "name": "eval_perf_seed_100.jsonl",
+      "routes": {
+        "not_scored": 100
+      },
+      "top_tags": {
+        "faq": 50,
+        "perf": 100,
+        "real_query": 50
+      }
+    }
+  ],
+  "generated_by": "scripts/generate_eval_sets.py",
+  "random_seed": 20260608,
+  "schema_version": 1
+}

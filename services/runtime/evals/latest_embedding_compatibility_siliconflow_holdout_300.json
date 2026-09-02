@@ -1,0 +1,615 @@
+{
+  "remote_provider": "siliconflow",
+  "model": "BAAI/bge-m3",
+  "dataset": "eval_retrieval_holdout_300.jsonl",
+  "total": 300,
+  "remote_encoding": {
+    "total_ms": 19918.96,
+    "mean_ms": 66.4
+  },
+  "same_text_local_remote_cosine": {
+    "count": 20,
+    "mean": 0.999949,
+    "min": 0.999932,
+    "max": 0.999967
+  },
+  "local_query_against_current_document_vectors": {
+    "recall_at_5": 0.9833,
+    "top1": 0.9533,
+    "mrr_at_5": 0.9678,
+    "sample_top1_failures": [
+      {
+        "id": "holdout_002",
+        "query": "（PC端 ）",
+        "expected": [
+          2885
+        ],
+        "actual": [
+          1584,
+          946,
+          354,
+          1321,
+          1066
+        ]
+      },
+      {
+        "id": "holdout_008",
+        "query": "开了PRO会员，要怎么使用？",
+        "expected": [
+          565
+        ],
+        "actual": [
+          843,
+          565,
+          1573,
+          593,
+          922
+        ]
+      },
+      {
+        "id": "holdout_011",
+        "query": "以前安装的过期了",
+        "expected": [
+          185
+        ],
+        "actual": [
+          3490,
+          185,
+          3287,
+          3321,
+          1043
+        ]
+      },
+      {
+        "id": "holdout_027",
+        "query": "PC端是否可以查看指标说明",
+        "expected": [
+          125
+        ],
+        "actual": [
+          60,
+          545,
+          329,
+          2324,
+          2091
+        ]
+      },
+      {
+        "id": "holdout_028",
+        "query": "画线仅显示在当前周期",
+        "expected": [
+          90
+        ],
+        "actual": [
+          2455,
+          90,
+          3432,
+          3603,
+          2664
+        ]
+      },
+      {
+        "id": "holdout_030",
+        "query": "为什么套利收益是负的?",
+        "expected": [
+          275
+        ],
+        "actual": [
+          416,
+          275,
+          651,
+          670,
+          661
+        ]
+      },
+      {
+        "id": "holdout_046",
+        "query": "如何切换单向持仓",
+        "expected": [
+          2194
+        ],
+        "actual": [
+          3690,
+          2194,
+          834,
+          2193,
+          180
+        ]
+      },
+      {
+        "id": "holdout_105",
+        "query": "Resistance Line)",
+        "expected": [
+          1518
+        ],
+        "actual": [
+          1843,
+          1391,
+          1518,
+          50,
+          1361
+        ]
+      },
+      {
+        "id": "holdout_136",
+        "query": "DCA选TD触发还是RSI触发",
+        "expected": [
+          1194
+        ],
+        "actual": [
+          1968,
+          1194,
+          2665,
+          2662,
+          2886
+        ]
+      },
+      {
+        "id": "holdout_224",
+        "query": "有教程吗",
+        "expected": [
+          3037
+        ],
+        "actual": [
+          1105,
+          711,
+          380,
+          1689,
+          983
+        ]
+      }
+    ]
+  },
+  "remote_query_against_current_document_vectors": {
+    "recall_at_5": 0.9833,
+    "top1": 0.9533,
+    "mrr_at_5": 0.9675,
+    "sample_top1_failures": [
+      {
+        "id": "holdout_002",
+        "query": "（PC端 ）",
+        "expected": [
+          2885
+        ],
+        "actual": [
+          1584,
+          946,
+          354,
+          1321,
+          1066
+        ]
+      },
+      {
+        "id": "holdout_008",
+        "query": "开了PRO会员，要怎么使用？",
+        "expected": [
+          565
+        ],
+        "actual": [
+          843,
+          565,
+          1573,
+          593,
+          922
+        ]
+      },
+      {
+        "id": "holdout_011",
+        "query": "以前安装的过期了",
+        "expected": [
+          185
+        ],
+        "actual": [
+          3490,
+          185,
+          3287,
+          3321,
+          1043
+        ]
+      },
+      {
+        "id": "holdout_027",
+        "query": "PC端是否可以查看指标说明",
+        "expected": [
+          125
+        ],
+        "actual": [
+          60,
+          545,
+          329,
+          2324,
+          2091
+        ]
+      },
+      {
+        "id": "holdout_028",
+        "query": "画线仅显示在当前周期",
+        "expected": [
+          90
+        ],
+        "actual": [
+          2455,
+          90,
+          3432,
+          3603,
+          2664
+        ]
+      },
+      {
+        "id": "holdout_030",
+        "query": "为什么套利收益是负的?",
+        "expected": [
+          275
+        ],
+        "actual": [
+          416,
+          275,
+          651,
+          670,
+          661
+        ]
+      },
+      {
+        "id": "holdout_046",
+        "query": "如何切换单向持仓",
+        "expected": [
+          2194
+        ],
+        "actual": [
+          3690,
+          2194,
+          834,
+          2193,
+          180
+        ]
+      },
+      {
+        "id": "holdout_105",
+        "query": "Resistance Line)",
+        "expected": [
+          1518
+        ],
+        "actual": [
+          1843,
+          1391,
+          50,
+          1518,
+          1361
+        ]
+      },
+      {
+        "id": "holdout_136",
+        "query": "DCA选TD触发还是RSI触发",
+        "expected": [
+          1194
+        ],
+        "actual": [
+          1968,
+          1194,
+          2665,
+          2662,
+          2886
+        ]
+      },
+      {
+        "id": "holdout_224",
+        "query": "有教程吗",
+        "expected": [
+          3037
+        ],
+        "actual": [
+          1105,
+          711,
+          380,
+          1689,
+          983
+        ]
+      }
+    ]
+  },
+  "remote_minus_local_vector_metrics": {
+    "recall_at_5": 0.0,
+    "top1": 0.0,
+    "mrr_at_5": -0.0003
+  },
+  "local_query_rrf_against_current_document_vectors": {
+    "recall_at_5": 0.9933,
+    "top1": 0.9633,
+    "mrr_at_5": 0.9769,
+    "sample_top1_failures": [
+      {
+        "id": "holdout_002",
+        "query": "（PC端 ）",
+        "expected": [
+          2885
+        ],
+        "actual": [
+          1584,
+          946,
+          1550,
+          354,
+          698
+        ]
+      },
+      {
+        "id": "holdout_027",
+        "query": "PC端是否可以查看指标说明",
+        "expected": [
+          125
+        ],
+        "actual": [
+          60,
+          125,
+          545,
+          329,
+          2324
+        ]
+      },
+      {
+        "id": "holdout_028",
+        "query": "画线仅显示在当前周期",
+        "expected": [
+          90
+        ],
+        "actual": [
+          2455,
+          90,
+          3603,
+          3432,
+          206
+        ]
+      },
+      {
+        "id": "holdout_030",
+        "query": "为什么套利收益是负的?",
+        "expected": [
+          275
+        ],
+        "actual": [
+          416,
+          275,
+          651,
+          670,
+          661
+        ]
+      },
+      {
+        "id": "holdout_046",
+        "query": "如何切换单向持仓",
+        "expected": [
+          2194
+        ],
+        "actual": [
+          3690,
+          2194,
+          834,
+          1293,
+          2193
+        ]
+      },
+      {
+        "id": "holdout_105",
+        "query": "Resistance Line)",
+        "expected": [
+          1518
+        ],
+        "actual": [
+          1843,
+          1518,
+          1391,
+          50,
+          1361
+        ]
+      },
+      {
+        "id": "holdout_224",
+        "query": "有教程吗",
+        "expected": [
+          3037
+        ],
+        "actual": [
+          711,
+          1689,
+          1105,
+          3037,
+          380
+        ]
+      },
+      {
+        "id": "holdout_252",
+        "query": "如何操作",
+        "expected": [
+          3221
+        ],
+        "actual": [
+          2471,
+          2796,
+          812,
+          3169,
+          589
+        ]
+      },
+      {
+        "id": "holdout_262",
+        "query": "欧易的GMT",
+        "expected": [
+          568
+        ],
+        "actual": [
+          343,
+          568,
+          3640,
+          1255,
+          301
+        ]
+      },
+      {
+        "id": "holdout_279",
+        "query": "什么是大额成交列表 (Large Trades List)",
+        "expected": [
+          1516
+        ],
+        "actual": [
+          1841,
+          1516,
+          1839,
+          1514,
+          1838
+        ]
+      }
+    ]
+  },
+  "remote_query_rrf_against_current_document_vectors": {
+    "recall_at_5": 0.9933,
+    "top1": 0.9633,
+    "mrr_at_5": 0.9769,
+    "sample_top1_failures": [
+      {
+        "id": "holdout_002",
+        "query": "（PC端 ）",
+        "expected": [
+          2885
+        ],
+        "actual": [
+          1584,
+          946,
+          1550,
+          354,
+          698
+        ]
+      },
+      {
+        "id": "holdout_027",
+        "query": "PC端是否可以查看指标说明",
+        "expected": [
+          125
+        ],
+        "actual": [
+          60,
+          125,
+          545,
+          329,
+          2324
+        ]
+      },
+      {
+        "id": "holdout_028",
+        "query": "画线仅显示在当前周期",
+        "expected": [
+          90
+        ],
+        "actual": [
+          2455,
+          90,
+          3603,
+          3432,
+          206
+        ]
+      },
+      {
+        "id": "holdout_030",
+        "query": "为什么套利收益是负的?",
+        "expected": [
+          275
+        ],
+        "actual": [
+          416,
+          275,
+          651,
+          670,
+          661
+        ]
+      },
+      {
+        "id": "holdout_046",
+        "query": "如何切换单向持仓",
+        "expected": [
+          2194
+        ],
+        "actual": [
+          3690,
+          2194,
+          834,
+          1293,
+          2193
+        ]
+      },
+      {
+        "id": "holdout_105",
+        "query": "Resistance Line)",
+        "expected": [
+          1518
+        ],
+        "actual": [
+          1843,
+          1518,
+          1391,
+          50,
+          1361
+        ]
+      },
+      {
+        "id": "holdout_224",
+        "query": "有教程吗",
+        "expected": [
+          3037
+        ],
+        "actual": [
+          711,
+          1689,
+          1105,
+          3037,
+          380
+        ]
+      },
+      {
+        "id": "holdout_252",
+        "query": "如何操作",
+        "expected": [
+          3221
+        ],
+        "actual": [
+          2471,
+          2796,
+          812,
+          3169,
+          589
+        ]
+      },
+      {
+        "id": "holdout_262",
+        "query": "欧易的GMT",
+        "expected": [
+          568
+        ],
+        "actual": [
+          343,
+          568,
+          3640,
+          1255,
+          301
+        ]
+      },
+      {
+        "id": "holdout_279",
+        "query": "什么是大额成交列表 (Large Trades List)",
+        "expected": [
+          1516
+        ],
+        "actual": [
+          1841,
+          1516,
+          1839,
+          1514,
+          1838
+        ]
+      }
+    ]
+  },
+  "remote_minus_local_rrf_metrics": {
+    "recall_at_5": 0.0,
+    "top1": 0.0,
+    "mrr_at_5": 0.0
+  },
+  "compatible_without_reembedding": true
+}

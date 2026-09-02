@@ -1,0 +1,20 @@
+{
+  "kind": "collectionType",
+  "collectionName": "agent_message_feedbacks",
+  "info": {
+    "singularName": "agent-message-feedback",
+    "pluralName": "agent-message-feedbacks",
+    "displayName": "Agent 回答反馈"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "assistant_message_key": {"type": "string", "required": true, "unique": true},
+    "trace_id": {"type": "string"},
+    "session_id": {"type": "string", "required": true},
+    "user_id": {"type": "string", "required": true},
+    "rating": {"type": "enumeration", "enum": ["positive", "negative"], "required": true},
+    "reason": {"type": "text"}
+  }
+}

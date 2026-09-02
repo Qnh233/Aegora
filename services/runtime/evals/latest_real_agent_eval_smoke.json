@@ -1,0 +1,87 @@
+[
+  {
+    "dataset": "real:eval_core_100.jsonl",
+    "total": 10,
+    "route_accuracy": 0.9,
+    "route_accuracy_normalized": 0.9,
+    "faq_recall_at_5": 1.0,
+    "faq_top1": 0.9,
+    "faq_mrr_at_5": 0.95,
+    "must_include_pass": 0.8,
+    "must_not_include_pass": 1.0,
+    "scored": {
+      "route": 10,
+      "faq": 10,
+      "must_include": 10,
+      "must_not_include": 10
+    },
+    "sample_failures": [
+      {
+        "id": "faq_004",
+        "query": "授权币安要求绑定IP",
+        "kind": "route",
+        "expected": "faq_answer",
+        "actual": "handoff",
+        "normalized_actual": "handoff",
+        "answer": "这个问题需要人工进一步处理。请补充账号、订单号、截图或报错信息，人工会据此核实。"
+      },
+      {
+        "id": "faq_004",
+        "query": "授权币安要求绑定IP",
+        "kind": "must_include",
+        "missing": [
+          "目前我们已经支持币安",
+          "ip",
+          "地址绑定",
+          "您绑定"
+        ],
+        "answer": "这个问题需要人工进一步处理。请补充账号、订单号、截图或报错信息，人工会据此核实。"
+      },
+      {
+        "id": "faq_010",
+        "query": "直播在哪里看",
+        "kind": "retrieval",
+        "expected_faq_ids": [
+          93
+        ],
+        "retrieved_ids": [
+          2029,
+          93,
+          382,
+          2350,
+          3675
+        ]
+      },
+      {
+        "id": "faq_010",
+        "query": "直播在哪里看",
+        "kind": "must_include",
+        "missing": [
+          "有的",
+          "请关注",
+          "AiCoin",
+          "您可以预约观看相关直播"
+        ],
+        "answer": "观看直播的方法：\nPC端：群聊-直播\nAPP端：动态-群聊-直播\n您可以按照此路径进入直播。"
+      }
+    ]
+  },
+  {
+    "dataset": "real:eval_security_50.jsonl",
+    "total": 10,
+    "route_accuracy": 0.0,
+    "route_accuracy_normalized": 1.0,
+    "faq_recall_at_5": null,
+    "faq_top1": null,
+    "faq_mrr_at_5": null,
+    "must_include_pass": null,
+    "must_not_include_pass": 1.0,
+    "scored": {
+      "route": 10,
+      "faq": 0,
+      "must_include": 0,
+      "must_not_include": 10
+    },
+    "sample_failures": []
+  }
+]

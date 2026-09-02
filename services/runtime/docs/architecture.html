@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agentic RAG 架构图</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --panel: #ffffff;
+      --text: #1d2433;
+      --muted: #647084;
+      --line: #cfd7e6;
+      --blue: #2563eb;
+      --green: #16815f;
+      --orange: #c46a13;
+      --purple: #7c3aed;
+      --red: #c2410c;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(1180px, calc(100vw - 32px));
+      margin: 28px auto 56px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 30px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 34px 0 14px;
+      font-size: 20px;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 14px;
+      color: var(--muted);
+    }
+
+    .canvas {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 22px;
+      overflow-x: auto;
+      box-shadow: 0 1px 2px rgba(16, 24, 40, .05);
+    }
+
+    .grid {
+      min-width: 980px;
+      display: grid;
+      grid-template-columns: 160px 170px 190px 170px 170px;
+      gap: 18px 22px;
+      align-items: center;
+    }
+
+    .lane-title {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .box {
+      min-height: 72px;
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--blue);
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px 12px;
+      position: relative;
+    }
+
+    .box strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .box span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .green { border-left-color: var(--green); }
+    .orange { border-left-color: var(--orange); }
+    .purple { border-left-color: var(--purple); }
+    .red { border-left-color: var(--red); }
+
+    .arrow::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: -23px;
+      width: 22px;
+      border-top: 2px solid var(--line);
+    }
+
+    .arrow::before {
+      content: "";
+      position: absolute;
+      top: calc(50% - 5px);
+      right: -25px;
+      border-left: 7px solid var(--line);
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+
+    .wide {
+      grid-column: span 2;
+    }
+
+    .stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .flow {
+      min-width: 820px;
+      display: flex;
+      align-items: stretch;
+      gap: 18px;
+    }
+
+    .step {
+      width: 128px;
+      min-height: 86px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px;
+      position: relative;
+      text-align: center;
+    }
+
+    .step:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .step b {
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .step small {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .loop-note {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-left: 4px solid var(--orange);
+      background: #fff7ed;
+      color: #8a4b0f;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #eef3fb;
+      font-size: 13px;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+    code {
+      background: #eef1f6;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+    }
+
+    .notes {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .deploy-grid {
+      min-width: 980px;
+      display: grid;
+      grid-template-columns: 180px 210px 230px 230px;
+      gap: 16px 20px;
+      align-items: stretch;
+    }
+
+    .deploy-title {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .deploy-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 13px 14px;
+      min-height: 94px;
+      position: relative;
+    }
+
+    .deploy-card b {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .deploy-card ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .deploy-card.arrow::after {
+      right: -21px;
+      width: 20px;
+    }
+
+    .deploy-card.arrow::before {
+      right: -23px;
+    }
+
+    .note {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 13px 14px;
+    }
+
+    .note b {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .note span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 760px) {
+      main { width: min(100vw - 20px, 1180px); margin-top: 18px; }
+      h1 { font-size: 24px; }
+      .canvas { padding: 14px; }
+      .notes { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Agentic RAG 项目架构图</h1>
+    <p>基于当前项目代码整理：入口在 <code>apps/</code>，核心运行时在 <code>src/agentic_rag/</code>，同步、嵌入和评估在 <code>scripts/</code>。</p>
+
+    <h2>总体架构</h2>
+    <section class="canvas">
+      <div class="grid">
+        <div class="lane-title">入口</div>
+        <div class="lane-title">服务封装</div>
+        <div class="lane-title">Agent 编排</div>
+        <div class="lane-title">能力依赖</div>
+        <div class="lane-title">外部/存储</div>
+
+        <div class="stack">
+          <div class="box arrow"><strong>FastAPI</strong><span>apps/api_app.py</span></div>
+          <div class="box arrow"><strong>企业微信</strong><span>apps/wecom_aibot_app.py</span></div>
+          <div class="box arrow"><strong>Gradio 测试页</strong><span>apps/chat_app.py</span></div>
+        </div>
+
+        <div class="box arrow green"><strong>单轮对话服务</strong><span>handle_chat_turn：会话锁、读历史、跑 Agent、保存结果</span></div>
+        <div class="box arrow purple"><strong>PocoFlow Agent Loop</strong><span>planner 单一模式</span></div>
+
+        <div class="stack">
+          <div class="box arrow"><strong>LLM Gateway</strong><span>分类、规划、回答、自检可选</span></div>
+          <div class="box arrow"><strong>BGE-M3 Embedding</strong><span>SiliconFlow 或本地模型</span></div>
+          <div class="box arrow"><strong>工具系统</strong><span>search_faq / load_skill / handoff 等</span></div>
+        </div>
+
+        <div class="stack">
+          <div class="box green"><strong>PostgreSQL / pgvector</strong><span>FAQ 副本、向量、锁、日志、审计、记忆</span></div>
+          <div class="box orange"><strong>Strapi / MySQL</strong><span>FAQ/Skill 源内容、会话、消息、反馈</span></div>
+          <div class="box red"><strong>logs/</strong><span>PocoFlow SQLite + 结构化日志</span></div>
+        </div>
+
+        <div></div>
+        <div class="box arrow orange"><strong>同步脚本</strong><span>sync_strapi_content.py</span></div>
+        <div class="box arrow orange"><strong>向量生成</strong><span>embed_faqs.py / scripts/skills.py</span></div>
+        <div class="box arrow orange"><strong>评估脚本</strong><span>eval_*.py</span></div>
+        <div class="box orange"><strong>离线链路</strong><span>Strapi → PG → Embedding → PG → Evals</span></div>
+      </div>
+    </section>
+
+    <h2>历史 router 流程（已下线）</h2>
+    <section class="canvas">
+      <div class="flow">
+        <div class="step"><b>LoadContext</b><small>恢复 session/history/已加载 Skill</small></div>
+        <div class="step"><b>LoadSkills</b><small>Skill 向量召回与自动注入</small></div>
+        <div class="step"><b>ClassifyIntent</b><small>规则优先，必要时 fast model</small></div>
+        <div class="step"><b>HybridSearch</b><small>全文 + 向量 + RRF</small></div>
+        <div class="step"><b>Think</b><small>LLM Gateway chat model 决策</small></div>
+        <div class="step"><b>ExecuteTool</b><small>工具调用后回到 Think</small></div>
+        <div class="step"><b>SelfCheck</b><small>本地校验，LLM 自检默认关闭</small></div>
+      </div>
+      <div class="loop-note">当 Think 返回 <code>tool_call</code> 时进入 ExecuteTool，工具结果写回状态后继续 Think；返回 faq_answer / clarify / handoff / chat 时进入 SelfCheck。</div>
+    </section>
+
+    <h2>Docker / K8s 部署视图</h2>
+    <section class="canvas">
+      <div class="deploy-grid">
+        <div class="deploy-title">镜像</div>
+        <div class="deploy-title">容器入口</div>
+        <div class="deploy-title">K8s 工作负载</div>
+        <div class="deploy-title">平台资源</div>
+
+        <div class="deploy-card arrow">
+          <b>Docker Image</b>
+          <ul>
+            <li><code>python:3.11-slim</code></li>
+            <li><code>PYTHONPATH=/app/src:/app</code></li>
+            <li>默认暴露 <code>5000</code></li>
+          </ul>
+        </div>
+
+        <div class="deploy-card arrow">
+          <b>docker-entrypoint.sh</b>
+          <ul>
+            <li><code>APP_MODE=api</code> 跑 uvicorn</li>
+            <li><code>APP_MODE=gradio</code> 跑测试页</li>
+            <li><code>APP_MODE=wecom</code> 跑长连接 worker</li>
+          </ul>
+        </div>
+
+        <div class="deploy-card arrow">
+          <b>API Deployment</b>
+          <ul>
+            <li>运行 <code>apps.api_app:app</code></li>
+            <li>Service 暴露 5000</li>
+            <li>Ingress / Gateway 对外接入</li>
+          </ul>
+        </div>
+
+        <div class="deploy-card">
+          <b>ConfigMap / Secret</b>
+          <ul>
+            <li>模型、检索、Agent 配置</li>
+            <li>PG、Strapi、LLM Gateway、Embedding 密钥</li>
+            <li>API Bearer Token</li>
+          </ul>
+        </div>
+
+        <div></div>
+        <div></div>
+
+        <div class="deploy-card arrow">
+          <b>WeCom Worker Deployment</b>
+          <ul>
+            <li>运行 <code>apps/wecom_aibot_app.py</code></li>
+            <li>主动连企业微信 WS</li>
+            <li>通常不需要 Service</li>
+          </ul>
+        </div>
+
+        <div class="deploy-card">
+          <b>外部托管依赖</b>
+          <ul>
+            <li>PostgreSQL / pgvector</li>
+            <li>Strapi / MySQL</li>
+            <li>LLM Gateway / SiliconFlow</li>
+          </ul>
+        </div>
+
+        <div></div>
+        <div></div>
+
+        <div class="deploy-card arrow">
+          <b>Gradio Deployment</b>
+          <ul>
+            <li>内部体验和调试</li>
+            <li>建议内网 Service</li>
+            <li>生产可不部署</li>
+          </ul>
+        </div>
+
+        <div class="deploy-card">
+          <b>Job / CronJob</b>
+          <ul>
+            <li>数据库迁移</li>
+            <li>Strapi 内容同步</li>
+            <li>FAQ/Skill 向量生成</li>
+            <li>离线评估</li>
+          </ul>
+        </div>
+      </div>
+      <div class="loop-note">当前仓库未发现 K8s YAML；这层表达的是按现有 Docker 入口能自然拆出来的部署拓扑。API 是可水平扩展服务，WeCom 是长连接 worker，迁移/同步/嵌入更适合 Job 或 CronJob。</div>
+    </section>
+
+    <h2>planner 流程</h2>
+    <section class="canvas">
+      <div class="flow">
+        <div class="step"><b>LoadContext</b><small>恢复上下文</small></div>
+        <div class="step"><b>LoadSkills</b><small>召回 Skill 候选</small></div>
+        <div class="step"><b>PreGuard</b><small>安全、人工、低信息量边界</small></div>
+        <div class="step"><b>Think</b><small>模型自行决定是否调用工具</small></div>
+        <div class="step"><b>ExecuteTool</b><small>search_faq / load_skill 等</small></div>
+        <div class="step"><b>SelfCheck</b><small>终态检查</small></div>
+      </div>
+      <div class="loop-note">planner 跳过前置分类和自动 FAQ 检索，是否调用 <code>search_faq</code> 由模型在 Think 阶段决定。</div>
+    </section>
+
+    <h2>模块边界</h2>
+    <table>
+      <thead>
+        <tr><th>层级</th><th>主要文件</th><th>职责</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>入口层</td><td><code>apps/api_app.py</code><br><code>apps/chat_app.py</code><br><code>apps/wecom_aibot_app.py</code></td><td>HTTP、Gradio、企业微信接入；不承载核心决策。</td></tr>
+        <tr><td>服务层</td><td><code>src/agentic_rag/service.py</code></td><td>标准化单轮请求、会话锁、读取历史、运行 Agent、保存结果。</td></tr>
+        <tr><td>编排层</td><td><code>src/agentic_rag/agent_loop.py</code></td><td>PocoFlow 节点、planner flow、工具循环、自检、观测事件。</td></tr>
+        <tr><td>依赖层</td><td><code>src/agentic_rag/real_agent.py</code></td><td>装配 LLM Gateway、Embedding、检索、Skill、工具和自检逻辑。</td></tr>
+        <tr><td>检索层</td><td><code>src/agentic_rag/retrieval.py</code><br><code>src/agentic_rag/demo_agent.py</code></td><td>PG 全文检索、pgvector 检索、RRF 融合、Embedding 降级。</td></tr>
+        <tr><td>工具层</td><td><code>src/agentic_rag/local_aicoin_tools.py</code><br><code>src/agentic_rag/tools.py</code></td><td>工具注册、参数校验、并行/串行执行、工具日志。</td></tr>
+        <tr><td>会话层</td><td><code>src/agentic_rag/sessions.py</code><br><code>src/agentic_rag/strapi.py</code></td><td>会话续读、消息保存、反馈保存；内容走 Strapi API。</td></tr>
+        <tr><td>离线任务</td><td><code>scripts/sync_strapi_content.py</code><br><code>scripts/embed_faqs.py</code><br><code>scripts/eval_*.py</code></td><td>内容同步、向量生成、检索和回答质量评估。</td></tr>
+      </tbody>
+    </table>
+
+    <h2>关键边界</h2>
+    <section class="notes">
+      <div class="note"><b>内容源</b><span>FAQ 和 Skill 源内容由 Strapi 管理，运行时检索副本和向量在 PostgreSQL/pgvector。</span></div>
+      <div class="note"><b>会话存储</b><span>会话、消息、反馈通过 Strapi 保存；会话并发锁、工具日志、审计日志、记忆写 PostgreSQL。</span></div>
+      <div class="note"><b>检索降级</b><span>Embedding API 不可用时，FAQ 检索可降级为全文检索；Skill 自动召回会跳过。</span></div>
+      <div class="note"><b>工具执行</b><span>只有整批工具全部只读且 parallel_safe 时才并行；混入写工具时串行执行。</span></div>
+    </section>
+  </main>
+</body>
+</html>

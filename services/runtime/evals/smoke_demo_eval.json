@@ -1,0 +1,135 @@
+[
+  {
+    "dataset": "eval_core_100.jsonl",
+    "total": 100,
+    "route_accuracy": 0.9,
+    "route_accuracy_normalized": 0.93,
+    "faq_recall_at_5": 0.9726,
+    "faq_top1": 0.9178,
+    "faq_mrr_at_5": 0.9429,
+    "must_include_pass": 0.8219,
+    "must_not_include_pass": 1.0,
+    "scored": {
+      "route": 100,
+      "faq": 73,
+      "must_include": 73,
+      "must_not_include": 100
+    },
+    "sample_failures": [
+      {
+        "id": "faq_010",
+        "query": "直播在哪里看",
+        "kind": "retrieval",
+        "expected_faq_ids": [
+          93
+        ],
+        "retrieved_ids": [
+          2029,
+          2350,
+          93,
+          382
+        ]
+      },
+      {
+        "id": "faq_010",
+        "query": "直播在哪里看",
+        "kind": "must_include",
+        "missing": [
+          "有的",
+          "请关注",
+          "AiCoin",
+          "您可以预约观看相关直播"
+        ],
+        "answer": "您好，查看直播回放的方法：群聊-直播-直播回放"
+      },
+      {
+        "id": "faq_017",
+        "query": "被查核违反了规则禁言 为什么被封禁了",
+        "kind": "must_include",
+        "missing": [
+          "被禁言是怎么回事"
+        ],
+        "answer": "您好，广场动态发布低俗言论和不雅图片被禁言，现已解封，请遵守广场社区管理规定，避免被禁言的情况再次发生。"
+      },
+      {
+        "id": "faq_018",
+        "query": "为什么没发布违反规范的内容被禁言",
+        "kind": "must_include",
+        "missing": [
+          "为什么没发布违反规范的内容被禁言"
+        ],
+        "answer": "您好，机器人误识别为广告自动封禁，现已解封，请您刷新发言试试"
+      },
+      {
+        "id": "faq_032",
+        "query": "如何定制自定义指标",
+        "kind": "retrieval",
+        "expected_faq_ids": [
+          592
+        ],
+        "retrieved_ids": [
+          283,
+          592,
+          111,
+          1114,
+          281
+        ]
+      },
+      {
+        "id": "faq_032",
+        "query": "如何定制自定义指标",
+        "kind": "must_include",
+        "missing": [
+          "定制指标是我们的会员专享权益",
+          "我们可以帮您将交易逻辑",
+          "进离场判断等转化为代码",
+          "请您提供指标编写相关逻辑"
+        ],
+        "answer": "您好，会员介绍页可以查看自定义指标定制权益：\nSVIP：享【30】个定制权益； \n年会员：享【20】个定制权益； \n半年会员：享【8】个定制权益； \n季度会员：享【3】个定制权益； \n⽉会员：享【1】个定制权益。\n根据指标的实现难度、复杂程度，每次定制指标/策略，权益消耗次数会有所不同。\n\n1.在购买前，请与客服确认您"
+      },
+      {
+        "id": "faq_036",
+        "query": "筹码分布图怎么看",
+        "kind": "retrieval",
+        "expected_faq_ids": [
+          566
+        ],
+        "retrieved_ids": [
+          137,
+          566,
+          455,
+          1976
+        ]
+      },
+      {
+        "id": "faq_036",
+        "query": "筹码分布图怎么看",
+        "kind": "must_include",
+        "missing": [
+          "这是筹码功能的简单介绍"
+        ],
+        "answer": "您好，筹码分布图（量价分布图）是PRO版K线的特色指标。筹码分布指标通过在K线上画出成交量的柱状图，帮助投资者找到交易发生最多的价格区间\n\nPC端设置路径：点击K线页面上方“指标”->特色指标->勾选“筹码分布”指标；\nAPP端设置路径：\n1、在K线页面内->指标->特色指标->筹码分布\n2、在K线页面内->高级->筹"
+      },
+      {
+        "id": "faq_037",
+        "query": "电脑怎么全屏",
+        "kind": "must_include",
+        "missing": [
+          "电脑怎么全屏",
+          "未分类"
+        ],
+        "answer": "您好，请点击K线右上角全屏符号。"
+      },
+      {
+        "id": "faq_038",
+        "query": "k线可以下载吗",
+        "kind": "must_include",
+        "missing": [
+          "线可以下载吗",
+          "未分类"
+        ],
+        "answer": "很抱歉，软件目前暂不支持下载K线。"
+      }
+    ]
+  }
+]

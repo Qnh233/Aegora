@@ -1,0 +1,382 @@
+{
+  "dataset": "eval_retrieval_sample_300.jsonl",
+  "fusion_method": "rrf",
+  "rrf_k": 60,
+  "tie_break_source": "vector",
+  "candidate_k": 5,
+  "top_k": 5,
+  "total": 300,
+  "recall_at_k": 1.0,
+  "top1_accuracy": 0.9767,
+  "mrr_at_k": 0.9878,
+  "query_encoding": {
+    "total_ms": 29733.98,
+    "mean_ms": 99.11
+  },
+  "hybrid_search": {
+    "mean_ms": 23.28,
+    "p95_ms": 25.91,
+    "max_ms": 33.88
+  },
+  "sample_top1_failures": [
+    {
+      "id": "retrieval_012",
+      "query": "如何定制自定义指标",
+      "expected_faq_ids": [
+        592
+      ],
+      "results": [
+        {
+          "faq_id": 111,
+          "title": "如何使用自定义指标功能",
+          "rrf_score": 0.032266,
+          "source_ranks": {
+            "fulltext": 3,
+            "vector": 1
+          }
+        },
+        {
+          "faq_id": 592,
+          "title": "如何定制自定义指标？",
+          "rrf_score": 0.032258,
+          "source_ranks": {
+            "fulltext": 2,
+            "vector": 2
+          }
+        },
+        {
+          "faq_id": 283,
+          "title": "会员自定义指标定制的权益具体的规则是什么",
+          "rrf_score": 0.016393,
+          "source_ranks": {
+            "fulltext": 1
+          }
+        },
+        {
+          "faq_id": 1894,
+          "title": "我想要定制指标",
+          "rrf_score": 0.015873,
+          "source_ranks": {
+            "vector": 3
+          }
+        },
+        {
+          "faq_id": 1094,
+          "title": "我要定制指标",
+          "rrf_score": 0.015625,
+          "source_ranks": {
+            "vector": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "retrieval_094",
+      "query": "量比",
+      "expected_faq_ids": [
+        680
+      ],
+      "results": [
+        {
+          "faq_id": 238,
+          "title": "量比榜是什么意思，是什么与什么的量比。这个数值有解释的吗？",
+          "rrf_score": 0.032522,
+          "source_ranks": {
+            "fulltext": 1,
+            "vector": 2
+          }
+        },
+        {
+          "faq_id": 2101,
+          "title": "有量比指标吗",
+          "rrf_score": 0.03101,
+          "source_ranks": {
+            "fulltext": 5,
+            "vector": 4
+          }
+        },
+        {
+          "faq_id": 680,
+          "title": "量比",
+          "rrf_score": 0.016393,
+          "source_ranks": {
+            "vector": 1
+          }
+        },
+        {
+          "faq_id": 2487,
+          "title": "什么是持仓量指标？",
+          "rrf_score": 0.016129,
+          "source_ranks": {
+            "fulltext": 2
+          }
+        },
+        {
+          "faq_id": 2682,
+          "title": "条件选币中的量比如何理解",
+          "rrf_score": 0.015873,
+          "source_ranks": {
+            "vector": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "retrieval_180",
+      "query": "个人简介怎样修改",
+      "expected_faq_ids": [
+        215
+      ],
+      "results": [
+        {
+          "faq_id": 202,
+          "title": "个人简介怎么修改？",
+          "rrf_score": 0.032522,
+          "source_ranks": {
+            "fulltext": 2,
+            "vector": 1
+          }
+        },
+        {
+          "faq_id": 215,
+          "title": "个人简介在哪里修改？",
+          "rrf_score": 0.032522,
+          "source_ranks": {
+            "fulltext": 1,
+            "vector": 2
+          }
+        },
+        {
+          "faq_id": 986,
+          "title": "个人签名在哪里改",
+          "rrf_score": 0.015873,
+          "source_ranks": {
+            "vector": 3
+          }
+        },
+        {
+          "faq_id": 925,
+          "title": "怎么改昵称",
+          "rrf_score": 0.015625,
+          "source_ranks": {
+            "vector": 4
+          }
+        },
+        {
+          "faq_id": 3248,
+          "title": "我想要更改已公布要闻的头像和名称，怎么操作？",
+          "rrf_score": 0.015385,
+          "source_ranks": {
+            "vector": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "retrieval_206",
+      "query": "全币种DCA触发条件一般有哪些",
+      "expected_faq_ids": [
+        2886
+      ],
+      "results": [
+        {
+          "faq_id": 2885,
+          "title": "全币种DCA触发条件一般有哪些？（PC端 ）",
+          "rrf_score": 0.032787,
+          "source_ranks": {
+            "fulltext": 1,
+            "vector": 1
+          }
+        },
+        {
+          "faq_id": 2886,
+          "title": "全币种DCA触发条件一般有哪些？（手机端）",
+          "rrf_score": 0.032258,
+          "source_ranks": {
+            "fulltext": 2,
+            "vector": 2
+          }
+        },
+        {
+          "faq_id": 2710,
+          "title": "全币种DCA启动条件参数解释",
+          "rrf_score": 0.015873,
+          "source_ranks": {
+            "vector": 3
+          }
+        },
+        {
+          "faq_id": 2711,
+          "title": "全币种DCA平仓条件参数解释",
+          "rrf_score": 0.015625,
+          "source_ranks": {
+            "vector": 4
+          }
+        },
+        {
+          "faq_id": 2666,
+          "title": "如何设置全币种DCA的投资参数？",
+          "rrf_score": 0.015385,
+          "source_ranks": {
+            "vector": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "retrieval_234",
+      "query": "为什么策略面板的数据与交易所的数据不一致",
+      "expected_faq_ids": [
+        3101
+      ],
+      "results": [
+        {
+          "faq_id": 3005,
+          "title": "运行策略后，策略面板的数据与交易所的数据不一致。",
+          "rrf_score": 0.032787,
+          "source_ranks": {
+            "fulltext": 1,
+            "vector": 1
+          }
+        },
+        {
+          "faq_id": 3101,
+          "title": "为什么策略面板的数据与交易所的数据不一致。交易所显示没有仓位，AiCoin策略运行面板显示还有仓位？",
+          "rrf_score": 0.032258,
+          "source_ranks": {
+            "fulltext": 2,
+            "vector": 2
+          }
+        },
+        {
+          "faq_id": 2963,
+          "title": "为什么在使用 Bybit 交易所的 XXX/USDC 合约交易对时，我们的平台显示的收益数据与 Bybit 交易所不一致？",
+          "rrf_score": 0.015873,
+          "source_ranks": {
+            "vector": 3
+          }
+        },
+        {
+          "faq_id": 3026,
+          "title": "为什么策略云里面的持仓盈亏和实际盈亏对不上？",
+          "rrf_score": 0.015625,
+          "source_ranks": {
+            "vector": 4
+          }
+        },
+        {
+          "faq_id": 393,
+          "title": "换了电脑后，运行同一策略显示API 异常",
+          "rrf_score": 0.015385,
+          "source_ranks": {
+            "vector": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "retrieval_245",
+      "query": "指标选币中的“过滤方式”是什么",
+      "expected_faq_ids": [
+        2562
+      ],
+      "results": [
+        {
+          "faq_id": 2559,
+          "title": "什么是指标选币的“过滤方式”？",
+          "rrf_score": 0.032522,
+          "source_ranks": {
+            "fulltext": 2,
+            "vector": 1
+          }
+        },
+        {
+          "faq_id": 2562,
+          "title": "指标选币中的“过滤方式”是什么？",
+          "rrf_score": 0.032522,
+          "source_ranks": {
+            "fulltext": 1,
+            "vector": 2
+          }
+        },
+        {
+          "faq_id": 2581,
+          "title": "指标选币种如果不选择过滤方式，会怎样？",
+          "rrf_score": 0.031498,
+          "source_ranks": {
+            "fulltext": 4,
+            "vector": 3
+          }
+        },
+        {
+          "faq_id": 2566,
+          "title": "指标选币中过滤方式适合哪些用户？",
+          "rrf_score": 0.031258,
+          "source_ranks": {
+            "fulltext": 3,
+            "vector": 5
+          }
+        },
+        {
+          "faq_id": 2565,
+          "title": "指标选币中为什么要用过滤方式？",
+          "rrf_score": 0.015625,
+          "source_ranks": {
+            "vector": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "retrieval_288",
+      "query": "API接口中的获取资讯列表，一次只能访问多少页数据",
+      "expected_faq_ids": [
+        3108
+      ],
+      "results": [
+        {
+          "faq_id": 3245,
+          "title": "API接口中的获取资讯列表，一次只能访问多少页数据？",
+          "rrf_score": 0.032787,
+          "source_ranks": {
+            "fulltext": 1,
+            "vector": 1
+          }
+        },
+        {
+          "faq_id": 3108,
+          "title": "API接口中的获取资讯列表，一次只能访问多少页数据？",
+          "rrf_score": 0.032258,
+          "source_ranks": {
+            "fulltext": 2,
+            "vector": 2
+          }
+        },
+        {
+          "faq_id": 2602,
+          "title": "开放数据中的“获取资讯列表”指的是什么",
+          "rrf_score": 0.015873,
+          "source_ranks": {
+            "vector": 3
+          }
+        },
+        {
+          "faq_id": 3053,
+          "title": "内容板块中的API接口都很类似，几个快讯、咨询API接口有什么区别？",
+          "rrf_score": 0.015625,
+          "source_ranks": {
+            "vector": 4
+          }
+        },
+        {
+          "faq_id": 2606,
+          "title": "开放数据中的\"获取资讯列表\"指的是什么",
+          "rrf_score": 0.015385,
+          "source_ranks": {
+            "vector": 5
+          }
+        }
+      ]
+    }
+  ]
+}

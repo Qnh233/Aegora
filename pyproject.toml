@@ -1,0 +1,11 @@
+[tool.pytest.ini_options]
+pythonpath = [
+  "services/runtime/src",
+  "services/runtime",
+  "apps/control-plane/backend",
+]
+testpaths = [
+  "services/runtime/tests",
+  "apps/control-plane/backend/tests",
+]
+
