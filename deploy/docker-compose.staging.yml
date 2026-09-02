@@ -1,0 +1,39 @@
+services:
+  backend:
+    image: ghcr.io/${GHCR_OWNER:?set GHCR_OWNER}/aegora-control-plane-backend:${AEGORA_IMAGE_TAG:?set AEGORA_IMAGE_TAG}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      RUNNER_GATEWAY_URL: http://runtime:5000
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      runtime:
+        condition: service_healthy
+
+  runtime:
+    image: ghcr.io/${GHCR_OWNER:?set GHCR_OWNER}/aegora-runtime:${AEGORA_IMAGE_TAG:?set AEGORA_IMAGE_TAG}
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:5000:5000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/healthz', timeout=3)"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  frontend:
+    image: ghcr.io/${GHCR_OWNER:?set GHCR_OWNER}/aegora-control-plane-frontend:${AEGORA_IMAGE_TAG:?set AEGORA_IMAGE_TAG}
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend

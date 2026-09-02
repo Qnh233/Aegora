@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1920" role="img" aria-labelledby="title desc">
+  <title id="title">Aegora logo</title>
+  <desc id="desc">Three blue-violet gradient nodes connected by curved links in a triangular loop.</desc>
+  <defs>
+    <linearGradient id="nodeGradient" x1="18%" y1="12%" x2="82%" y2="88%">
+      <stop offset="0" stop-color="#082f9f"/>
+      <stop offset="0.42" stop-color="#2537e7"/>
+      <stop offset="0.72" stop-color="#6b2cf1"/>
+      <stop offset="1" stop-color="#c42cf0"/>
+    </linearGradient>
+    <linearGradient id="leftLink" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1d38e4"/>
+      <stop offset="0.48" stop-color="#bb36ef"/>
+      <stop offset="1" stop-color="#1237cf"/>
+    </linearGradient>
+    <linearGradient id="rightLink" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5334ee"/>
+      <stop offset="0.5" stop-color="#9b31f0"/>
+      <stop offset="1" stop-color="#2435dd"/>
+    </linearGradient>
+    <linearGradient id="bottomLink" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#1235ca"/>
+      <stop offset="0.5" stop-color="#2d3ae9"/>
+      <stop offset="0.78" stop-color="#6134ef"/>
+      <stop offset="1" stop-color="#2736df"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1920" fill="#ffffff"/>
+  <path d="M 865 548 C 672 713 489 934 420 1243" fill="none" stroke="url(#leftLink)" stroke-width="46" stroke-linecap="round"/>
+  <path d="M 1055 548 C 1248 713 1431 934 1500 1243" fill="none" stroke="url(#rightLink)" stroke-width="46" stroke-linecap="round"/>
+  <path d="M 535 1442 C 798 1514 1122 1514 1385 1442" fill="none" stroke="url(#bottomLink)" stroke-width="46" stroke-linecap="round"/>
+  <circle cx="960" cy="450" r="174" fill="url(#nodeGradient)"/>
+  <circle cx="410" cy="1400" r="174" fill="url(#nodeGradient)"/>
+  <circle cx="1510" cy="1400" r="174" fill="url(#nodeGradient)"/>
+</svg>

@@ -1,4 +1,8 @@
-# Aegora
+<p align="center">
+  <img src="./docs/assets/aegora-logo.svg" alt="Aegora logo" width="260" />
+</p>
+
+<h1 align="center">Aegora</h1>
 
 [中文文档](./README_CN.md)
 

@@ -1,0 +1,85 @@
+name: Deploy Staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "GHCR image tag to deploy. Leave empty to deploy the selected main commit SHA."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy staging
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Resolve image version
+        id: vars
+        shell: bash
+        env:
+          REQUESTED_TAG: ${{ inputs.image_tag }}
+        run: |
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+          if [ -n "$REQUESTED_TAG" ]; then
+            echo "tag=$REQUESTED_TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload staging compose file
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          source: deploy/docker-compose.staging.yml
+          target: /opt/aegora
+          strip_components: 1
+
+      - name: Pull and restart staging
+        uses: appleboy/ssh-action@v1.2.5
+        env:
+          AEGORA_IMAGE_TAG: ${{ steps.vars.outputs.tag }}
+          GHCR_OWNER: ${{ steps.vars.outputs.owner }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          envs: AEGORA_IMAGE_TAG,GHCR_OWNER,GHCR_USERNAME,GHCR_TOKEN
+          script: |
+            set -eu
+            cd /opt/aegora
+            test -f .env
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+            export AEGORA_IMAGE_TAG GHCR_OWNER
+            docker compose -f docker-compose.staging.yml pull
+            docker compose -f docker-compose.staging.yml up -d --remove-orphans
+            docker compose -f docker-compose.staging.yml ps
+
+            i=0
+            until curl -fsS http://127.0.0.1:5000/healthz >/dev/null \
+              && curl -fsS http://127.0.0.1:8000/auth/config >/dev/null \
+              && curl -fsS http://127.0.0.1:8080/ >/dev/null; do
+              i=$((i + 1))
+              if [ "$i" -ge 20 ]; then
+                docker compose -f docker-compose.staging.yml logs --tail=100
+                exit 1
+              fi
+              sleep 3
+            done
+
+            echo "Aegora staging is healthy at image tag: $AEGORA_IMAGE_TAG"

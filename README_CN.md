@@ -1,4 +1,8 @@
-# Aegora
+<p align="center">
+  <img src="./docs/assets/aegora-logo.svg" alt="Aegora Logo" width="260" />
+</p>
+
+<h1 align="center">Aegora</h1>
 
 [English](./README.md)
 
