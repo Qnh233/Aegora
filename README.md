@@ -190,6 +190,6 @@ Planned next steps:
 
 1. Add a Workflow Capability adapter and workflow registration UX.
 2. Harden the LiteLLM/Langfuse production path: pin tested image digests, add multi-provider fallback policies, budgets and trace/evaluation dashboards.
-3. Add Redis-backed L2 configuration caching plus version/event-driven invalidation, keeping runtime L1 caches disposable.
+3. Redis L2 phase 1 is implemented on the roadmap branch: Runtime can cache only immutable Release `config_json` under versioned Redis keys while release status, RBAC, tool state and MCP connection state remain live PostgreSQL reads. Next, add publish/revoke/tool-policy invalidation events and bounded Runtime L1 caching.
 4. Generalize the existing reflection/Skill-draft path into per-Agent learning policies, evaluation gates and the governed data flywheel described above.
 

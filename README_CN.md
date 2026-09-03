@@ -159,5 +159,5 @@ PYTHONPATH=src uvicorn apps.api_app:app --host 127.0.0.1 --port 5000
 
 1. 增加 Workflow Capability Adapter 与工作流注册 UX。
 2. 继续硬化 LiteLLM / Langfuse 生产链路：锁定验证过的镜像 Digest，增加多 Provider Fallback、预算策略与 Trace/Eval 看板。
-3. 引入 Redis L2 配置缓存、版本化 Key 与事件驱动失效机制，同时保持 Runtime L1 可丢弃。
+3. Redis L2 第一阶段已在 Roadmap 分支落地：Runtime 仅把不可变 Release `config_json` 放入版本化 Redis Key；Release 状态、RBAC、工具状态与 MCP Connection 状态仍实时读取 PostgreSQL。下一步补发布/撤销/工具策略变更事件驱动失效，以及有界 Runtime L1 缓存。
 4. 将已有 Reflection / Skill Draft 路径扩展为按 Agent 配置的学习策略、评测门禁与受治理数据飞轮。

@@ -1,0 +1,12 @@
+# Engineering Journal
+
+## 2026-09-04 — Redis L2 phase 1: immutable Release config cache
+
+- **Objective / roadmap item:** start Redis-backed L2 configuration caching without weakening Aegora's release/RBAC/runtime governance boundary.
+- **Key design decisions / tradeoffs:** cache only immutable `agent_releases.config_json`, keyed by `agent_id + release_id + release_version`; always read current release status/visibility from PostgreSQL and continue resolving current actor permissions, tool status/policy and MCP connection status per run. Redis is fail-open and therefore an acceleration layer, never a correctness dependency.
+- **Pitfalls / root causes:** the first focused test failed because an existing DB fixture captured only the last SQL statement. The cache-miss path intentionally adds a second `config_json` query, so the fixture hid the original version lookup. Fixed the test to record the SQL sequence rather than changing production behavior. The local shell also lacks `rg`, so repository search fell back to `git grep`.
+- **Highlights / reusable patterns:** immutable-vs-mutable fact separation gives a safe cache boundary; versioned keys make future publish/invalidation events simple; Redis connection failures degrade to PostgreSQL instead of failing requests. Staging now has an ephemeral Redis service because cached data is reconstructible.
+- **Important files / commands:** `services/runtime/src/aegora_runtime/runtime_cache.py`, `runtime_context.py`, `.env.example`, `deploy/docker-compose.staging.yml`; focused verification uses `python -m pytest services/runtime/tests/test_runtime_cache.py services/runtime/tests/test_runtime_context.py -q` plus `compileall` and `git diff --check`.
+- **Verification:** focused Runtime cache/context tests pass (`15 passed`); Python `compileall`, staging Compose YAML parsing and `git diff --check` all pass.
+- **Blockers:** event-driven invalidation is not yet wired from Control Plane publish/revoke/tool-policy mutations. Until that lands, mutable governance facts are intentionally excluded from Redis. Main's current CI still runs all Python tests in one pytest process; the already-open Workflow PR contains the independent CI isolation fix, so this Redis branch does not duplicate that pending change.
+- **Next step:** add a small versioned invalidation event contract/publisher-consumer path, then optionally add bounded Runtime L1 for the same immutable static config payload.
