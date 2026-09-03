@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aegora.local/contracts/runtime-invalidation-event.schema.json",
+  "title": "Aegora Runtime Invalidation Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "event_type",
+    "occurred_at",
+    "agent_id"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "event_id": {"type": "string", "minLength": 1},
+    "event_type": {
+      "enum": ["release.published", "release.revoked", "tool.policy.changed"]
+    },
+    "occurred_at": {"type": "string", "format": "date-time"},
+    "agent_id": {"type": "string", "minLength": 1},
+    "release_id": {"type": ["string", "null"]},
+    "release_version": {"type": ["integer", "null"], "minimum": 1},
+    "tool_id": {"type": ["string", "null"]},
+    "reason": {"type": ["string", "null"]}
+  }
+}

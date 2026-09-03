@@ -1,5 +1,16 @@
 # Engineering Journal
 
+## 2026-09-04 — Redis event fabric phase 1: versioned invalidation loop
+
+- **Objective / roadmap item:** close the next Redis roadmap gap without depending on the still-unmerged Workflow PR: define a small cross-plane invalidation contract and wire Control Plane mutations to a Runtime subscriber.
+- **Key design decisions / tradeoffs:** Redis Pub/Sub is explicitly best-effort and never participates in the database transaction or request success path. PostgreSQL remains authoritative, so missed events affect cache convergence/observability rather than authorization correctness. Release events carry `agent_id + release_id + release_version` and evict only that exact immutable cache key; global tool-status events use the same v1 envelope but do not evict static Release config because tool policy is still read live from PostgreSQL.
+- **Pitfalls / root causes:** the first verification command used PowerShell `$env:` syntax, but DevSpace's default command shell for this workspace is `cmd.exe`; rerunning with `set KEY=value&& ...` fixed the harness without touching product code. A deployment review also caught that enabling the Runtime subscriber alone was insufficient: the Control Plane service must receive the same Redis URL/event-channel settings and depend on Redis health, otherwise the publisher would stay disabled in staging.
+- **Highlights / reusable patterns:** schema-first event envelopes make cross-plane evolution explicit; publisher and subscriber both fail open; the existing `cache.delete()` API invalidates L1 and L2 together; tool-policy events establish a convergence/observability contract now without pretending mutable authorization facts are cached.
+- **Important files / commands:** `packages/contracts/runtime-invalidation-event.schema.json`, `apps/control-plane/backend/app/cache_events.py`, `services/runtime/src/aegora_runtime/runtime_invalidation.py`, `services/runtime/apps/api_app.py`, `deploy/docker-compose.staging.yml`; targeted tests run Control Plane and Runtime independently to avoid the known main-branch pytest module collision.
+- **Verification:** Control Plane event tests `2 passed`; Runtime cache/context/invalidation tests `20 passed`; Python `compileall` and `git diff --check` pass. Staging wiring includes Redis settings for both backend publisher and Runtime subscriber.
+- **Blockers:** PR #2 still inherits the known Python CI collection collision from `main`; the independent fix remains green in PR #1. Event delivery/lag metrics and MCP session convergence on tool policy changes are not yet implemented.
+- **Next step:** add event counters/lag observability and, only where policy changes require it, targeted MCP pool/session invalidation; otherwise move to the next independent roadmap item rather than expanding Redis into a governance source.
+
 ## 2026-09-04 — Redis cache phase 2: bounded Runtime L1
 
 - **Objective / roadmap item:** continue the Redis configuration-cache roadmap without touching the still-unmerged Workflow/CI branch; add the bounded process-local L1 that sits in front of Redis L2 for immutable Release config only.

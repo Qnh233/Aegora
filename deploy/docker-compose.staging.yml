@@ -42,12 +42,17 @@ services:
       LLM_API_KEY: ${LITELLM_MASTER_KEY}
       LLM_BASE_URL: http://litellm:4000/v1
       LLM_MODEL: aegora-chat
+      RUNTIME_CONFIG_EVENTS_ENABLED: "true"
+      RUNTIME_CONFIG_INVALIDATION_CHANNEL: aegora:runtime-config:events:v1
+      RUNTIME_CONFIG_REDIS_URL: redis://redis:6379/0
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
       runtime:
         condition: service_healthy
       litellm:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   runtime:
@@ -63,6 +68,8 @@ services:
       LLM_GATEWAY_TRACE_METADATA_ENABLED: "true"
       LANGFUSE_RELEASE: ${AEGORA_IMAGE_TAG:-local}
       RUNTIME_CONFIG_CACHE_ENABLED: "true"
+      RUNTIME_CONFIG_EVENTS_ENABLED: "true"
+      RUNTIME_CONFIG_INVALIDATION_CHANNEL: aegora:runtime-config:events:v1
       RUNTIME_CONFIG_REDIS_URL: redis://redis:6379/0
       RUNTIME_CONFIG_L1_MAX_ENTRIES: ${RUNTIME_CONFIG_L1_MAX_ENTRIES:-256}
     ports:

@@ -112,7 +112,7 @@ Production Runs / Traces / Human Feedback
 - **Full lineage**: retain source run/evidence, evaluator result, proposal, reviewer/policy decision and resulting version for auditability.
 - **No authorization expansion through learning**: learned Skills/prompts cannot grant tools or scopes beyond the published release ceiling and current runtime authorization intersection.
 
-The current codebase already contains foundations for this design: immutable releases, runtime policy resolution, governance/audit boundaries, Skills, the existing reflection/Skill-draft path, a central LiteLLM gateway integration and Langfuse trace correlation. The end-to-end automated flywheel and Redis L2 event fabric remain **roadmap architecture until their corresponding implementation lands**.
+The current codebase already contains foundations for this design: immutable releases, runtime policy resolution, governance/audit boundaries, Skills, the existing reflection/Skill-draft path, a central LiteLLM gateway integration and Langfuse trace correlation. The Redis roadmap branch now also contains bounded Runtime L1 + versioned Redis L2 plus a v1 publish/revoke/tool-policy event contract with a best-effort Control Plane publisher and Runtime subscriber. The end-to-end automated flywheel remains roadmap work until its implementation lands.
 
 ## Repository layout
 
@@ -190,6 +190,6 @@ Planned next steps:
 
 1. Add a Workflow Capability adapter and workflow registration UX.
 2. Harden the LiteLLM/Langfuse production path: pin tested image digests, add multi-provider fallback policies, budgets and trace/evaluation dashboards.
-3. Redis cache phase 1/2 is implemented on the roadmap branch: Runtime caches only immutable Release `config_json` with bounded process-local L1 + versioned Redis L2, while release status, RBAC, tool state and MCP connection state remain live PostgreSQL reads. Next, add versioned publish/revoke/tool-policy invalidation events for explicit cross-pod convergence/observability.
+3. Redis cache phase 1/2 plus the first event-fabric slice is implemented on the roadmap branch: Runtime caches only immutable Release `config_json` with bounded process-local L1 + versioned Redis L2; Control Plane emits versioned publish/revoke/tool-policy events and Runtime consumes them, evicting exact release-version cache entries when relevant. Release status, RBAC, tool state and MCP connection state remain live PostgreSQL reads. Next, add event delivery/lag metrics and tool-session convergence where needed.
 4. Generalize the existing reflection/Skill-draft path into per-Agent learning policies, evaluation gates and the governed data flywheel described above.
 
