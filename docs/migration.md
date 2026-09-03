@@ -21,5 +21,5 @@
 - 建立跨服务合同包；
 - 建立仓库级验证脚本。
 
-后续再逐步实现 Workflow Registry、Learning Flywheel、Redis L1/L2、LiteLLM Proxy、Langfuse 等能力，避免迁移与新功能同时大改造成不可验证状态。
+LiteLLM Proxy 与 Langfuse 的基础接入已在迁移后的统一 Runtime/Deploy 边界内落地。后续再逐步实现 Workflow Registry、Learning Flywheel、Redis L1/L2，以及模型网关/Trace 的生产级硬化，避免多个高风险能力同时大改造成不可验证状态。
 

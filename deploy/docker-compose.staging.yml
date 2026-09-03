@@ -1,4 +1,27 @@
 services:
+  litellm:
+    image: ${LITELLM_IMAGE:-docker.litellm.ai/berriai/litellm:main-latest}
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    volumes:
+      - ./litellm-config.yaml:/app/config.yaml:ro
+    ports:
+      - "127.0.0.1:4000:4000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4000/health/liveliness', timeout=3)",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   backend:
     image: ghcr.io/${GHCR_OWNER:?set GHCR_OWNER}/aegora-control-plane-backend:${AEGORA_IMAGE_TAG:?set AEGORA_IMAGE_TAG}
     restart: unless-stopped
@@ -6,10 +29,15 @@ services:
       - .env
     environment:
       RUNNER_GATEWAY_URL: http://runtime:5000
+      LLM_API_KEY: ${LITELLM_MASTER_KEY}
+      LLM_BASE_URL: http://litellm:4000/v1
+      LLM_MODEL: aegora-chat
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
       runtime:
+        condition: service_healthy
+      litellm:
         condition: service_healthy
 
   runtime:
@@ -17,6 +45,13 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      LLM_GATEWAY_API_KEY: ${LITELLM_MASTER_KEY}
+      LLM_GATEWAY_BASE_URL: http://litellm:4000/v1
+      LLM_GATEWAY_CHAT_MODEL: aegora-chat
+      LLM_GATEWAY_FAST_MODEL: aegora-fast
+      LLM_GATEWAY_TRACE_METADATA_ENABLED: "true"
+      LANGFUSE_RELEASE: ${AEGORA_IMAGE_TAG:-local}
     ports:
       - "127.0.0.1:5000:5000"
     healthcheck:
@@ -29,6 +64,9 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+    depends_on:
+      litellm:
+        condition: service_healthy
 
   frontend:
     image: ghcr.io/${GHCR_OWNER:?set GHCR_OWNER}/aegora-control-plane-frontend:${AEGORA_IMAGE_TAG:?set AEGORA_IMAGE_TAG}

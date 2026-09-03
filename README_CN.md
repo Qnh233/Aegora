@@ -55,7 +55,8 @@ Runtime 在持久业务事实和配置事实层面保持无状态，但允许保
 - **Redis — 共享 L2 与事件层（目标能力）**：承载带版本号的 Runtime Context 缓存、失效/版本事件等可重建共享状态。Redis 不承担权威配置数据库职责。
 - **Runtime L1 — 进程内热点缓存**：缓存解析后的 Release/Runtime Context 等热点数据，使用版本化 Key 让发布或策略变化后的旧缓存自然失配。
 - **MCP Pool — 进程内连接复用**：每个 Runtime Pod 可复用 MCP Session/Connection，但池状态可随时丢弃并在重启后重建。
-- **LiteLLM Proxy — 统一模型网关（目标能力）**：集中处理 Provider 路由、重试、Fallback 和配额，避免 Agent Runtime 绑定各家模型 SDK。
+- **LiteLLM Proxy — 统一模型网关**：Runtime 与 Control Plane 统一通过 OpenAI-compatible 接口使用稳定的 `aegora-chat` / `aegora-fast` 别名，真实 Provider Key 与具体模型名收敛在 LiteLLM 后方；`deploy/` 已包含 Staging 部署接线。
+- **Langfuse — Agent/LLM 可观测性**：Runtime 可选创建携带 Aegora trace/session/user 上下文的根 Span，LiteLLM 再通过 Langfuse OTEL 上报模型 Generation，使 Agent 执行与 token、延迟、成本等模型数据能够关联。
 - **Prompt/KV Cache — 推理优化层（可选）**：仅用于降低推理成本和延迟，不能成为鉴权或业务状态来源。
 
 目标配置读取链路是 **PostgreSQL -> Redis L2 -> Runtime L1**。Agent 发布、禁用或权限/策略变化时推进版本并发送失效事件；Runtime 在版本变化或缓存 Miss 后重新解析，而不是依赖长 TTL 保证正确性。
@@ -111,7 +112,7 @@ Aegora 将运行经验视为 **候选改进素材**，而不是允许 Agent 在�
 - **完整血缘**：保留来源 Run/证据、评测结果、变更提案、策略/人工决策以及最终生成版本之间的关联。
 - **学习不能扩大权限**：新 Skill 或 Prompt 无法绕过已发布 Release 的能力上限，也不能绕过 Runtime 当前动态鉴权结果。
 
-当前代码已经具备该方向的基础：不可变 Release、Runtime 动态策略解析、审计/治理边界、Skill 机制，以及已有的 Reflection / Skill Draft 路径。完整自动化数据飞轮、Redis L2 事件层和统一 LiteLLM 部署在对应实现落地前均属于 **目标架构 / Roadmap**，不是已完成能力。
+当前代码已经具备该方向的基础：不可变 Release、Runtime 动态策略解析、审计/治理边界、Skill 机制、已有的 Reflection / Skill Draft 路径，以及统一 LiteLLM Gateway 与 Langfuse Trace 关联。完整自动化数据飞轮和 Redis L2 事件层在对应实现落地前仍属于 **目标架构 / Roadmap**。
 
 ## 仓库结构
 
@@ -133,6 +134,10 @@ Aegora/
 ```bash
 cp .env.example .env
 
+# 配置 LITELLM_* 上游模型参数；启用 Trace 时再配置 Langfuse Key。
+python -m pip install "litellm[proxy]"
+litellm --config deploy/litellm-config.yaml --port 4000
+
 cd apps/control-plane/backend
 python -m pip install -r requirements.txt
 uvicorn app.main:app --host 127.0.0.1 --port 8000
@@ -153,6 +158,6 @@ PYTHONPATH=src uvicorn apps.api_app:app --host 127.0.0.1 --port 5000
 下一步重点：
 
 1. 增加 Workflow Capability Adapter 与工作流注册 UX。
-2. 引入 LiteLLM Proxy 作为统一 LLM Gateway，并接入 Langfuse Trace。
+2. 继续硬化 LiteLLM / Langfuse 生产链路：锁定验证过的镜像 Digest，增加多 Provider Fallback、预算策略与 Trace/Eval 看板。
 3. 引入 Redis L2 配置缓存、版本化 Key 与事件驱动失效机制，同时保持 Runtime L1 可丢弃。
 4. 将已有 Reflection / Skill Draft 路径扩展为按 Agent 配置的学习策略、评测门禁与受治理数据飞轮。

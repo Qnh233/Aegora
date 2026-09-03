@@ -95,7 +95,7 @@ def test_chat_text_logs_latency_and_usage() -> None:
     assert isinstance(fields["elapsed_ms"], float)
 
 
-def test_thinking_mode_is_explicitly_disabled_by_default() -> None:
+def test_default_gateway_request_is_provider_neutral() -> None:
     client = DeepSeekClient(
         DeepSeekSettings(
             api_key="sk-test",
@@ -113,7 +113,7 @@ def test_thinking_mode_is_explicitly_disabled_by_default() -> None:
     payload = json.loads(urlopen.call_args.args[0].data)
     assert urlopen.call_args.args[0].full_url == "https://gateway.llmgtw.io/v1/chat/completions"
     assert payload["model"] == "deepseek-v4-pro"
-    assert payload["thinking"] == {"type": "disabled"}
+    assert "thinking" not in payload
     assert payload["temperature"] == 0.2
 
 
@@ -136,3 +136,27 @@ def test_thinking_mode_enabled_omits_temperature() -> None:
     payload = json.loads(urlopen.call_args.args[0].data)
     assert payload["thinking"] == {"type": "enabled"}
     assert "temperature" not in payload
+
+
+def test_litellm_trace_metadata_is_forwarded_when_present() -> None:
+    client = DeepSeekClient(
+        DeepSeekSettings(
+            api_key="sk-test",
+            base_url="http://litellm:4000/v1",
+            chat_model="aegora-chat",
+            fast_model="aegora-fast",
+            timeout_seconds=1,
+        )
+    )
+    response = FakeResponse({"choices": [{"message": {"content": "ok"}}]})
+
+    with patch("aegora_runtime.deepseek.current_llm_metadata", return_value={"trace_id": "abc"}):
+        with patch("urllib.request.urlopen", return_value=response) as urlopen:
+            assert client.chat_text([ChatMessage("user", "hi")]) == "ok"
+
+    payload = json.loads(urlopen.call_args.args[0].data)
+    assert payload["metadata"] == {
+        "trace_id": "abc",
+        "generation_name": "aegora-runtime:aegora-chat",
+        "aegora_model_alias": "aegora-chat",
+    }

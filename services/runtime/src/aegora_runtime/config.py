@@ -45,6 +45,7 @@ class DeepSeekSettings:
     fast_model: str
     timeout_seconds: int
     enable_thinking: bool = False
+    trace_metadata_enabled: bool = True
 
 
 @dataclass(frozen=True)
@@ -177,6 +178,7 @@ class ObservabilitySettings:
     pocoflow_db_enabled: bool
     file_log_enabled: bool
     instance_id: str
+    langfuse_tracing_enabled: bool
 
 
 @dataclass(frozen=True)
@@ -303,6 +305,10 @@ def _load_deepseek(raw: dict[str, Any]) -> DeepSeekSettings:
         enable_thinking=enable_thinking
         if enable_thinking is not None
         else _env_bool("DEEPSEEK_ENABLE_THINKING", raw["default_enable_thinking"]),
+        trace_metadata_enabled=_env_bool(
+            raw["trace_metadata_enabled_env_var"],
+            raw["default_trace_metadata_enabled"],
+        ),
     )
 
 
@@ -462,6 +468,10 @@ def _load_observability(raw: dict[str, Any]) -> ObservabilitySettings:
             raw["default_file_log_enabled"],
         ),
         instance_id=_env(raw["instance_id_env_var"], raw["default_instance_id"]),
+        langfuse_tracing_enabled=_env_bool(
+            raw["langfuse_tracing_enabled_env_var"],
+            raw["default_langfuse_tracing_enabled"],
+        ),
     )
 
 

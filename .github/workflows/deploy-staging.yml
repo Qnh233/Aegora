@@ -38,13 +38,13 @@ jobs:
             echo "tag=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Upload staging compose file
+      - name: Upload staging deployment files
         uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
-          source: deploy/docker-compose.staging.yml
+          source: deploy/docker-compose.staging.yml,deploy/litellm-config.yaml
           target: /opt/aegora
           strip_components: 1
 
@@ -71,7 +71,8 @@ jobs:
             docker compose -f docker-compose.staging.yml ps
 
             i=0
-            until curl -fsS http://127.0.0.1:5000/healthz >/dev/null \
+            until curl -fsS http://127.0.0.1:4000/health/liveliness >/dev/null \
+              && curl -fsS http://127.0.0.1:5000/healthz >/dev/null \
               && curl -fsS http://127.0.0.1:8000/auth/config >/dev/null \
               && curl -fsS http://127.0.0.1:8080/ >/dev/null; do
               i=$((i + 1))

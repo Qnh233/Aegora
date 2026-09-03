@@ -20,10 +20,11 @@ class ConfigTest(unittest.TestCase):
             settings = load_settings(CONFIG_PATH, env_path=None)
 
         self.assertEqual(settings.app.name, "aegora-runtime")
-        self.assertEqual(settings.deepseek.base_url, "https://gateway.llmgtw.io/v1")
-        self.assertEqual(settings.deepseek.chat_model, "deepseek-v4-pro")
-        self.assertEqual(settings.deepseek.fast_model, "deepseek-v4-flash")
+        self.assertEqual(settings.deepseek.base_url, "http://127.0.0.1:4000/v1")
+        self.assertEqual(settings.deepseek.chat_model, "aegora-chat")
+        self.assertEqual(settings.deepseek.fast_model, "aegora-fast")
         self.assertFalse(settings.deepseek.enable_thinking)
+        self.assertTrue(settings.deepseek.trace_metadata_enabled)
         self.assertIsNone(settings.wecom_aibot.bot_id)
         self.assertIsNone(settings.wecom_aibot.secret)
         self.assertEqual(settings.wecom_aibot.ws_url, "")
@@ -61,6 +62,7 @@ class ConfigTest(unittest.TestCase):
         self.assertTrue(settings.observability.pocoflow_db_enabled)
         self.assertTrue(settings.observability.file_log_enabled)
         self.assertEqual(settings.observability.instance_id, "local")
+        self.assertFalse(settings.observability.langfuse_tracing_enabled)
         self.assertIsNone(settings.deepseek.api_key)
 
     def test_env_overrides_defaults(self) -> None:
@@ -86,6 +88,8 @@ class ConfigTest(unittest.TestCase):
             "POCOFLOW_DB_ENABLED": "false",
             "FILE_LOG_ENABLED": "false",
             "INSTANCE_ID": "pod-2",
+            "LANGFUSE_TRACING_ENABLED": "true",
+            "LLM_GATEWAY_TRACE_METADATA_ENABLED": "false",
         }
         with patch.dict(os.environ, env, clear=True):
             settings = load_settings(CONFIG_PATH, env_path=None)
@@ -112,6 +116,8 @@ class ConfigTest(unittest.TestCase):
         self.assertFalse(settings.observability.pocoflow_db_enabled)
         self.assertFalse(settings.observability.file_log_enabled)
         self.assertEqual(settings.observability.instance_id, "pod-2")
+        self.assertTrue(settings.observability.langfuse_tracing_enabled)
+        self.assertFalse(settings.deepseek.trace_metadata_enabled)
 
     def test_legacy_deepseek_env_names_still_work(self) -> None:
         env = {

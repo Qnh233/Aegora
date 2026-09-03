@@ -8,15 +8,17 @@ default_product_id = "aicoin"
 [deepseek]
 api_key_env_var = "LLM_GATEWAY_API_KEY"
 base_url_env_var = "LLM_GATEWAY_BASE_URL"
-default_base_url = "https://gateway.llmgtw.io/v1"
+default_base_url = "http://127.0.0.1:4000/v1"
 chat_model_env_var = "LLM_GATEWAY_CHAT_MODEL"
-default_chat_model = "deepseek-v4-pro"
+default_chat_model = "aegora-chat"
 fast_model_env_var = "LLM_GATEWAY_FAST_MODEL"
-default_fast_model = "deepseek-v4-flash"
+default_fast_model = "aegora-fast"
 timeout_seconds_env_var = "LLM_GATEWAY_TIMEOUT_SECONDS"
 default_timeout_seconds = 30
 enable_thinking_env_var = "LLM_GATEWAY_ENABLE_THINKING"
 default_enable_thinking = false
+trace_metadata_enabled_env_var = "LLM_GATEWAY_TRACE_METADATA_ENABLED"
+default_trace_metadata_enabled = true
 
 [strapi]
 base_url_env_var = "STRAPI_BASE_URL"
@@ -195,6 +197,8 @@ file_log_enabled_env_var = "FILE_LOG_ENABLED"
 default_file_log_enabled = true
 instance_id_env_var = "INSTANCE_ID"
 default_instance_id = "local"
+langfuse_tracing_enabled_env_var = "LANGFUSE_TRACING_ENABLED"
+default_langfuse_tracing_enabled = false
 
 [eval]
 core_path = "evals/eval_core_100.jsonl"

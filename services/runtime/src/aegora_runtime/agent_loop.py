@@ -11,6 +11,7 @@ from pocoflow import Flow, Node, Store
 from aegora_runtime.config import ConfigError, Settings, load_settings
 from aegora_runtime.hooks import attach_default_hooks
 from aegora_runtime.logging import get_logger, log_event
+from aegora_runtime.observability import agent_trace_scope, finish_agent_trace
 from aegora_runtime.retrieval import trusted_top1_images
 from aegora_runtime.sessions import derive_user_id_from_session, normalize_session_id
 from aegora_runtime.streaming import StreamHandler, emit_stream_event
@@ -205,8 +206,10 @@ def run_agent(
         enable_pocoflow_db=enable_pocoflow_db,
     )
     flow.run_id = request.trace_id
-    result = flow.run(store)
-    output = result.as_dict()
+    with agent_trace_scope(request, cfg) as langfuse_span:
+        result = flow.run(store)
+        output = result.as_dict()
+        finish_agent_trace(langfuse_span, output)
     output["trace_id"] = request.trace_id
     output["model_thinking_enabled"] = cfg.deepseek.enable_thinking
     output["answer_assets"] = trusted_top1_images(output.get("retrieved_faqs") or [], output.get("route"))

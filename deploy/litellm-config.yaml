@@ -1,0 +1,20 @@
+model_list:
+  - model_name: aegora-chat
+    litellm_params:
+      model: os.environ/LITELLM_UPSTREAM_CHAT_MODEL
+      api_base: os.environ/LITELLM_UPSTREAM_BASE_URL
+      api_key: os.environ/LITELLM_UPSTREAM_API_KEY
+
+  - model_name: aegora-fast
+    litellm_params:
+      model: os.environ/LITELLM_UPSTREAM_FAST_MODEL
+      api_base: os.environ/LITELLM_UPSTREAM_BASE_URL
+      api_key: os.environ/LITELLM_UPSTREAM_API_KEY
+
+litellm_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  callbacks: ["langfuse_otel"]
+
+router_settings:
+  num_retries: 2
+  timeout: 30

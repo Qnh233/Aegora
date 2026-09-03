@@ -12,6 +12,7 @@ from typing import Any
 
 from aegora_runtime.config import DeepSeekSettings
 from aegora_runtime.logging import get_logger, log_event
+from aegora_runtime.observability import current_llm_metadata
 
 
 LOGGER = get_logger("deepseek")
@@ -67,12 +68,20 @@ class DeepSeekClient:
         payload: dict[str, Any] = {
             "model": model_name,
             "messages": [{"role": item.role, "content": item.content} for item in messages],
-            "thinking": {"type": "enabled" if self.settings.enable_thinking else "disabled"},
         }
-        if not self.settings.enable_thinking:
+        if self.settings.enable_thinking:
+            # Provider-specific capability: only opt in explicitly. The default
+            # LiteLLM path stays OpenAI-compatible and provider neutral.
+            payload["thinking"] = {"type": "enabled"}
+        else:
             payload["temperature"] = temperature
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
+        if self.settings.trace_metadata_enabled:
+            trace_metadata = current_llm_metadata()
+            trace_metadata.setdefault("generation_name", f"aegora-runtime:{model_name}")
+            trace_metadata.setdefault("aegora_model_alias", model_name)
+            payload["metadata"] = trace_metadata
 
         request = urllib.request.Request(
             f"{self.settings.base_url}/chat/completions",
@@ -153,6 +162,7 @@ class DeepSeekClient:
             logging.INFO if status == "ok" else logging.WARNING,
             "llm_call",
             model=model,
+            gateway_base_url=self.settings.base_url,
             status=status,
             elapsed_ms=round((time.perf_counter() - started) * 1000, 2),
             usage={

@@ -55,7 +55,8 @@ The runtime is stateless with respect to durable business/configuration truth, b
 - **Redis — shared L2 and event fabric (target)**: versioned runtime-context cache, invalidation/version events and other rebuildable shared state. Redis must never become the canonical configuration database.
 - **Runtime L1 — process-local hot cache**: resolved release/runtime contexts and bounded hot data. Versioned keys allow stale entries to stop matching after publish or policy changes.
 - **MCP pool — process-local reusable connections**: runtime pods may reuse MCP sessions/connections, while pool state remains disposable and rebuildable after restart.
-- **LiteLLM Proxy — central model gateway (target)**: provider routing, retry, fallback and quotas are centralized so Agent logic is not coupled to provider-specific SDKs.
+- **LiteLLM Proxy — central model gateway**: Runtime and Control Plane use stable `aegora-chat` / `aegora-fast` aliases through an OpenAI-compatible gateway; provider credentials and concrete model names remain behind LiteLLM. Staging deployment wiring is included under `deploy/`.
+- **Langfuse — Agent/LLM observability**: optional Runtime root spans reuse Aegora trace/session/user context, while LiteLLM exports model generations through Langfuse OTEL so Agent execution and token/latency/cost data can be correlated.
 - **Prompt/KV cache — inference optimization (optional)**: a performance layer below model routing, never an authorization or business-state source.
 
 The intended configuration path is **PostgreSQL -> Redis L2 -> Runtime L1**. Publish, disable or policy changes advance a version and emit invalidation information; runtimes re-resolve on a miss/version change instead of relying on long TTLs for correctness.
@@ -111,7 +112,7 @@ Production Runs / Traces / Human Feedback
 - **Full lineage**: retain source run/evidence, evaluator result, proposal, reviewer/policy decision and resulting version for auditability.
 - **No authorization expansion through learning**: learned Skills/prompts cannot grant tools or scopes beyond the published release ceiling and current runtime authorization intersection.
 
-The current codebase already contains foundations for this design: immutable releases, runtime policy resolution, governance/audit boundaries, Skills and an existing reflection/Skill-draft path. The end-to-end automated flywheel, Redis L2 event fabric and central LiteLLM deployment remain **roadmap architecture until their corresponding implementation lands**.
+The current codebase already contains foundations for this design: immutable releases, runtime policy resolution, governance/audit boundaries, Skills, the existing reflection/Skill-draft path, a central LiteLLM gateway integration and Langfuse trace correlation. The end-to-end automated flywheel and Redis L2 event fabric remain **roadmap architecture until their corresponding implementation lands**.
 
 ## Repository layout
 
@@ -150,7 +151,14 @@ Aegora/
 cp .env.example .env
 ```
 
-2. Start the control-plane backend:
+2. Configure the `LITELLM_*` upstream provider variables (and Langfuse keys when tracing is enabled), then start the central gateway:
+
+```bash
+python -m pip install "litellm[proxy]"
+litellm --config deploy/litellm-config.yaml --port 4000
+```
+
+3. Start the control-plane backend:
 
 ```bash
 cd apps/control-plane/backend
@@ -158,7 +166,7 @@ python -m pip install -r requirements.txt
 uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-3. Start the control-plane frontend:
+4. Start the control-plane frontend:
 
 ```bash
 cd apps/control-plane/frontend
@@ -166,7 +174,7 @@ npm install
 npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
-4. Start the runtime:
+5. Start the runtime:
 
 ```bash
 cd services/runtime
@@ -181,7 +189,7 @@ This workspace is the consolidated successor of the existing Agent Platform and 
 Planned next steps:
 
 1. Add a Workflow Capability adapter and workflow registration UX.
-2. Introduce LiteLLM Proxy as the central LLM gateway and Langfuse tracing.
+2. Harden the LiteLLM/Langfuse production path: pin tested image digests, add multi-provider fallback policies, budgets and trace/evaluation dashboards.
 3. Add Redis-backed L2 configuration caching plus version/event-driven invalidation, keeping runtime L1 caches disposable.
 4. Generalize the existing reflection/Skill-draft path into per-Agent learning policies, evaluation gates and the governed data flywheel described above.
 
