@@ -190,6 +190,6 @@ Planned next steps:
 
 1. Add a Workflow Capability adapter and workflow registration UX.
 2. Harden the LiteLLM/Langfuse production path: pin tested image digests, add multi-provider fallback policies, budgets and trace/evaluation dashboards.
-3. Redis cache phase 1/2 plus the first event-fabric slice is implemented on the roadmap branch: Runtime caches only immutable Release `config_json` with bounded process-local L1 + versioned Redis L2; Control Plane emits versioned publish/revoke/tool-policy events and Runtime consumes them, evicting exact release-version cache entries when relevant. Release status, RBAC, tool state and MCP connection state remain live PostgreSQL reads. Next, add event delivery/lag metrics and tool-session convergence where needed.
+3. Redis cache phase 1/2 plus the first event-fabric slice is implemented on the roadmap branch: Runtime caches only immutable Release `config_json` with bounded process-local L1 + versioned Redis L2; Control Plane emits versioned publish/revoke/tool-policy events and Runtime consumes them, evicting exact release-version cache entries when relevant. Runtime Prometheus metrics now expose applied/ignored/invalid event counts, event lag, and subscriber reconnect failures. Release status, RBAC, tool state and MCP connection state remain live PostgreSQL reads. Next, add producer-side delivery metrics and tool-session convergence where needed.
 4. Generalize the existing reflection/Skill-draft path into per-Agent learning policies, evaluation gates and the governed data flywheel described above.
 

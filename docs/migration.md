@@ -21,5 +21,5 @@
 - 建立跨服务合同包；
 - 建立仓库级验证脚本。
 
-LiteLLM Proxy 与 Langfuse 的基础接入已在迁移后的统一 Runtime/Deploy 边界内落地。Workflow Capability 第一阶段已通过独立 Roadmap PR 实现“工作流语义 + MCP 执行适配器”，尚未自动合并 main。Redis 缓存阶段则只缓存不可变 Release 静态配置，并刻意把 Release 状态、RBAC、工具与 MCP 当前治理事实留在 PostgreSQL 实时读取路径，避免缓存扩大权限或延迟撤销；当前 Roadmap 分支已形成有界进程内 L1 + 版本化 Redis L2，并加入 v1 版本化事件契约、控制面 best-effort 发布器与 Runtime 订阅失效路径。后续再逐步实现 Workflow 生命周期、事件投递/延迟观测与必要的 MCP Session 收敛、Learning Flywheel，以及模型网关/Trace 的生产级硬化，避免多个高风险能力同时大改造成不可验证状态。
+LiteLLM Proxy 与 Langfuse 的基础接入已在迁移后的统一 Runtime/Deploy 边界内落地。Workflow Capability 第一阶段已通过独立 Roadmap PR 实现“工作流语义 + MCP 执行适配器”，尚未自动合并 main。Redis 缓存阶段则只缓存不可变 Release 静态配置，并刻意把 Release 状态、RBAC、工具与 MCP 当前治理事实留在 PostgreSQL 实时读取路径，避免缓存扩大权限或延迟撤销；当前 Roadmap 分支已形成有界进程内 L1 + 版本化 Redis L2，并加入 v1 版本化事件契约、控制面 best-effort 发布器、Runtime 订阅失效路径，以及事件计数/消费延迟/订阅重连失败的 Prometheus 指标。后续再逐步实现 Workflow 生命周期、控制面 Publisher 投递观测与必要的 MCP Session 收敛、Learning Flywheel，以及模型网关/Trace 的生产级硬化，避免多个高风险能力同时大改造成不可验证状态。
 

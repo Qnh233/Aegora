@@ -1,5 +1,16 @@
 # Engineering Journal
 
+## 2026-09-04 — Redis event fabric phase 2: consumer observability
+
+- **Objective / roadmap item:** close the next explicit Redis roadmap gap on the existing Redis PR by making cross-pod invalidation convergence measurable before adding more cache/session behavior.
+- **Key design decisions / tradeoffs:** instrument the Runtime subscriber at the point where events are actually parsed/applied, not merely where Redis delivers bytes. Prometheus labels are deliberately bounded to `event_type + outcome` to avoid high-cardinality agent/release identifiers. Event lag is derived from the contract's `occurred_at`; invalid/missing timestamps do not fail event application. Redis loop failures increment a reconnect counter but remain fail-open.
+- **Pitfalls / root causes:** observability code can accidentally become a correctness dependency if timestamp parsing or metric emission throws. Lag parsing therefore returns `None` on malformed timestamps, while the event still follows its normal invalidation path. The producer side currently has no Prometheus endpoint/dependency, so adding a new metrics stack there would be disproportionate for this slice.
+- **Highlights / reusable patterns:** measure semantic outcomes (`applied`, `ignored`, `invalid`) rather than only transport receipts; use low-cardinality labels; derive end-to-end convergence lag from the existing event envelope instead of introducing another timestamp or distributed clock field.
+- **Important files / commands:** `services/runtime/src/aegora_runtime/metrics.py`, `runtime_invalidation.py`, `tests/test_runtime_invalidation.py`, README/README_CN and `docs/migration.md`.
+- **Verification:** targeted Runtime invalidation tests, Python compileall, Prometheus metric exposition smoke check, `git diff --check`.
+- **Blockers:** producer-side delivery metrics remain pending because Control Plane currently has no Prometheus surface; PR #2 also inherits main's known single-process pytest collection failure until the independent green CI fix in PR #1 is merged.
+- **Next step:** either add a lightweight Control Plane metrics surface for publisher attempts/success/failure, or move to tool-session convergence only if a real stale-session risk is demonstrated; avoid broadening Redis into a governance source.
+
 ## 2026-09-04 — Redis event fabric phase 1: versioned invalidation loop
 
 - **Objective / roadmap item:** close the next Redis roadmap gap without depending on the still-unmerged Workflow PR: define a small cross-plane invalidation contract and wire Control Plane mutations to a Runtime subscriber.

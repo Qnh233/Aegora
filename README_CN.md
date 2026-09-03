@@ -159,5 +159,5 @@ PYTHONPATH=src uvicorn apps.api_app:app --host 127.0.0.1 --port 5000
 
 1. 增加 Workflow Capability Adapter 与工作流注册 UX。
 2. 继续硬化 LiteLLM / Langfuse 生产链路：锁定验证过的镜像 Digest，增加多 Provider Fallback、预算策略与 Trace/Eval 看板。
-3. Redis 缓存第一/二阶段与事件层第一阶段已在 Roadmap 分支落地：Runtime 仅缓存不可变 Release `config_json`，链路为有界进程内 L1 + 版本化 Redis L2；Control Plane 发布版本化的发布/撤销/工具策略事件，Runtime 订阅并对相关 Release 精确失效。Release 状态、RBAC、工具状态与 MCP Connection 状态仍实时读取 PostgreSQL。下一步补事件投递/延迟指标，以及必要的 MCP Session 收敛动作。
+3. Redis 缓存第一/二阶段与事件层第一阶段已在 Roadmap 分支落地：Runtime 仅缓存不可变 Release `config_json`，链路为有界进程内 L1 + 版本化 Redis L2；Control Plane 发布版本化的发布/撤销/工具策略事件，Runtime 订阅并对相关 Release 精确失效。Runtime Prometheus 已补充 applied/ignored/invalid 事件计数、事件消费延迟和订阅重连失败指标。Release 状态、RBAC、工具状态与 MCP Connection 状态仍实时读取 PostgreSQL。下一步补控制面 Publisher 投递指标，以及必要的 MCP Session 收敛动作。
 4. 将已有 Reflection / Skill Draft 路径扩展为按 Agent 配置的学习策略、评测门禁与受治理数据飞轮。

@@ -19,9 +19,14 @@ def subscriber(cache: FakeCache) -> RuntimeInvalidationSubscriber:
     )
 
 
-def test_release_event_evicts_exact_versioned_cache_key() -> None:
+def test_release_event_evicts_exact_versioned_cache_key(monkeypatch) -> None:
     cache = FakeCache()
     consumer = subscriber(cache)
+    observed: list[tuple[str, str, float | None]] = []
+    monkeypatch.setattr(
+        "aegora_runtime.runtime_invalidation.record_runtime_invalidation_event",
+        lambda event_type, outcome, lag_seconds=None: observed.append((event_type, outcome, lag_seconds)),
+    )
 
     assert consumer.apply_event(
         {
@@ -37,6 +42,9 @@ def test_release_event_evicts_exact_versioned_cache_key() -> None:
         }
     ) is True
     assert cache.deleted == [("agent_1", "rel_1", 3)]
+    assert observed[0][0:2] == ("release.revoked", "applied")
+    assert observed[0][2] is not None
+    assert observed[0][2] >= 0
 
 
 def test_tool_policy_event_is_consumed_without_evicting_static_release_config() -> None:
@@ -59,10 +67,39 @@ def test_tool_policy_event_is_consumed_without_evicting_static_release_config() 
     assert cache.deleted == []
 
 
-def test_invalid_event_is_ignored() -> None:
+def test_invalid_event_is_ignored(monkeypatch) -> None:
     cache = FakeCache()
     consumer = subscriber(cache)
+    observed: list[tuple[str, str, float | None]] = []
+    monkeypatch.setattr(
+        "aegora_runtime.runtime_invalidation.record_runtime_invalidation_event",
+        lambda event_type, outcome, lag_seconds=None: observed.append((event_type, outcome, lag_seconds)),
+    )
 
     assert consumer.apply_event('{"schema_version":2,"event_type":"release.revoked"}') is False
     assert consumer.apply_event("not-json") is False
     assert cache.deleted == []
+    assert observed == [
+        ("release.revoked", "ignored", None),
+        ("unknown", "invalid", None),
+    ]
+
+
+def test_event_lag_ignores_invalid_timestamp(monkeypatch) -> None:
+    cache = FakeCache()
+    consumer = subscriber(cache)
+    observed: list[tuple[str, str, float | None]] = []
+    monkeypatch.setattr(
+        "aegora_runtime.runtime_invalidation.record_runtime_invalidation_event",
+        lambda event_type, outcome, lag_seconds=None: observed.append((event_type, outcome, lag_seconds)),
+    )
+
+    assert consumer.apply_event(
+        {
+            "schema_version": 1,
+            "event_type": "tool.policy.changed",
+            "occurred_at": "not-a-timestamp",
+            "agent_id": "*",
+        }
+    ) is True
+    assert observed == [("tool.policy.changed", "applied", None)]

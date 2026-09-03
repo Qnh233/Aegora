@@ -3,10 +3,15 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from threading import Event
 from typing import Any
 
 from aegora_runtime.runtime_cache import RedisReleaseConfigCache, get_runtime_config_cache
+from aegora_runtime.metrics import (
+    record_runtime_invalidation_event,
+    record_runtime_invalidation_subscriber_error,
+)
 
 
 DEFAULT_CHANNEL = "aegora:runtime-config:events:v1"
@@ -55,8 +60,11 @@ class RuntimeInvalidationSubscriber:
         try:
             payload = json.loads(raw) if isinstance(raw, str) else dict(raw)
         except (TypeError, ValueError, json.JSONDecodeError):
+            record_runtime_invalidation_event("unknown", "invalid")
             return False
-        if payload.get("schema_version") != 1 or payload.get("event_type") not in SUPPORTED_EVENTS:
+        event_type = str(payload.get("event_type") or "unknown")
+        if payload.get("schema_version") != 1 or event_type not in SUPPORTED_EVENTS:
+            record_runtime_invalidation_event(event_type, "ignored")
             return False
         release_id = payload.get("release_id")
         version = payload.get("release_version")
@@ -69,6 +77,7 @@ class RuntimeInvalidationSubscriber:
             )
         # Tool policy is deliberately not cached today; consuming the event still
         # establishes a versioned cross-pod convergence/observability contract.
+        record_runtime_invalidation_event(event_type, "applied", _event_lag_seconds(payload.get("occurred_at")))
         return True
 
     def run(self, stop_event: Event) -> None:
@@ -83,6 +92,7 @@ class RuntimeInvalidationSubscriber:
                     if message and message.get("type") == "message":
                         self.apply_event(message.get("data", ""))
             except Exception:
+                record_runtime_invalidation_subscriber_error()
                 stop_event.wait(self.settings.retry_seconds)
 
     def _redis(self) -> Any:
@@ -97,3 +107,15 @@ class RuntimeInvalidationSubscriber:
             socket_timeout=1,
         )
         return self._client
+
+
+def _event_lag_seconds(value: object) -> float | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        occurred_at = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if occurred_at.tzinfo is None:
+        occurred_at = occurred_at.replace(tzinfo=timezone.utc)
+    return max(0.0, (datetime.now(timezone.utc) - occurred_at.astimezone(timezone.utc)).total_seconds())
