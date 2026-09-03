@@ -53,7 +53,7 @@ The runtime is stateless with respect to durable business/configuration truth, b
 
 - **PostgreSQL — source of truth**: Agent drafts/releases, RBAC, capability state, MCP registrations, learning policies, audit records and other durable control-plane facts.
 - **Redis — shared L2 and event fabric (target)**: versioned runtime-context cache, invalidation/version events and other rebuildable shared state. Redis must never become the canonical configuration database.
-- **Runtime L1 — process-local hot cache**: resolved release/runtime contexts and bounded hot data. Versioned keys allow stale entries to stop matching after publish or policy changes.
+- **Runtime L1 — process-local hot cache**: bounded immutable Release config entries sit in front of Redis L2. Versioned keys prevent cross-release reuse; entries are disposable and never contain mutable authorization facts.
 - **MCP pool — process-local reusable connections**: runtime pods may reuse MCP sessions/connections, while pool state remains disposable and rebuildable after restart.
 - **LiteLLM Proxy — central model gateway**: Runtime and Control Plane use stable `aegora-chat` / `aegora-fast` aliases through an OpenAI-compatible gateway; provider credentials and concrete model names remain behind LiteLLM. Staging deployment wiring is included under `deploy/`.
 - **Langfuse — Agent/LLM observability**: optional Runtime root spans reuse Aegora trace/session/user context, while LiteLLM exports model generations through Langfuse OTEL so Agent execution and token/latency/cost data can be correlated.
@@ -190,6 +190,6 @@ Planned next steps:
 
 1. Add a Workflow Capability adapter and workflow registration UX.
 2. Harden the LiteLLM/Langfuse production path: pin tested image digests, add multi-provider fallback policies, budgets and trace/evaluation dashboards.
-3. Redis L2 phase 1 is implemented on the roadmap branch: Runtime can cache only immutable Release `config_json` under versioned Redis keys while release status, RBAC, tool state and MCP connection state remain live PostgreSQL reads. Next, add publish/revoke/tool-policy invalidation events and bounded Runtime L1 caching.
+3. Redis cache phase 1/2 is implemented on the roadmap branch: Runtime caches only immutable Release `config_json` with bounded process-local L1 + versioned Redis L2, while release status, RBAC, tool state and MCP connection state remain live PostgreSQL reads. Next, add versioned publish/revoke/tool-policy invalidation events for explicit cross-pod convergence/observability.
 4. Generalize the existing reflection/Skill-draft path into per-Agent learning policies, evaluation gates and the governed data flywheel described above.
 

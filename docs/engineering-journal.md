@@ -1,5 +1,16 @@
 # Engineering Journal
 
+## 2026-09-04 — Redis cache phase 2: bounded Runtime L1
+
+- **Objective / roadmap item:** continue the Redis configuration-cache roadmap without touching the still-unmerged Workflow/CI branch; add the bounded process-local L1 that sits in front of Redis L2 for immutable Release config only.
+- **Key design decisions / tradeoffs:** reuse the same versioned cache key for L1 and L2; keep the existing global cache enable switch so rollout remains one operational unit; use a small LRU (`RUNTIME_CONFIG_L1_MAX_ENTRIES`, default 256) rather than TTL correctness because Release `config_json` is immutable. Mutable release status, RBAC, tool policy/status and MCP connection facts are still excluded and read live from PostgreSQL.
+- **Pitfalls / root causes:** adding an in-memory layer changes object-identity semantics: Redis JSON decode previously returned a fresh object on every hit, while naïve L1 would return the same nested dict and allow downstream mutation to poison later runs. L1 therefore stores and returns deep copies. Redis outages also must not discard a value already warmed from PostgreSQL, so L1 is populated before the best-effort L2 write.
+- **Highlights / reusable patterns:** immutable data permits aggressive local caching without authorization staleness; a bounded LRU caps per-process memory; versioned keys make old Release entries unreachable by new versions; `delete()` clears both levels so future event consumers have one invalidation API.
+- **Important files / commands:** `services/runtime/src/aegora_runtime/runtime_cache.py`, `services/runtime/tests/test_runtime_cache.py`, `.env.example`, `deploy/docker-compose.staging.yml`; verification uses focused cache/context pytest, `compileall`, YAML parse and `git diff --check`.
+- **Verification:** focused Runtime cache/context tests pass (`17 passed`); Python `compileall`, staging Compose YAML parsing and `git diff --check` all pass.
+- **Blockers:** PR #2 still inherits main's old single-process Python CI collision; PR #1 contains the isolated-CI fix and is already green. This iteration intentionally avoids duplicating that unrelated change.
+- **Next step:** add a small versioned cache-event contract plus Control Plane publisher/Runtime consumer after the CI/Workflow dependency is merged or when it can be added without conflicting control-plane changes.
+
 ## 2026-09-04 — Redis L2 phase 1: immutable Release config cache
 
 - **Objective / roadmap item:** start Redis-backed L2 configuration caching without weakening Aegora's release/RBAC/runtime governance boundary.

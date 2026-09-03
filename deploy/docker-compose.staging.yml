@@ -64,6 +64,7 @@ services:
       LANGFUSE_RELEASE: ${AEGORA_IMAGE_TAG:-local}
       RUNTIME_CONFIG_CACHE_ENABLED: "true"
       RUNTIME_CONFIG_REDIS_URL: redis://redis:6379/0
+      RUNTIME_CONFIG_L1_MAX_ENTRIES: ${RUNTIME_CONFIG_L1_MAX_ENTRIES:-256}
     ports:
       - "127.0.0.1:5000:5000"
     healthcheck:

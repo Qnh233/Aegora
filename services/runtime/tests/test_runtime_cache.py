@@ -54,3 +54,41 @@ def test_release_config_cache_fails_open_when_redis_errors() -> None:
 
     assert cache.get(agent_id="agent_1", release_id="rel_1", version=1) is None
     cache.set({}, agent_id="agent_1", release_id="rel_1", version=1)
+    assert cache.get(agent_id="agent_1", release_id="rel_1", version=1) == {}
+
+
+def test_release_config_cache_l1_is_bounded_and_returns_copies() -> None:
+    redis = FakeRedis()
+    cache = RedisReleaseConfigCache(
+        RuntimeCacheSettings(
+            enabled=True,
+            redis_url="redis://unused",
+            key_prefix="test:aegora",
+            l1_max_entries=2,
+        ),
+        client=redis,
+    )
+
+    cache.set({"agent": {"id": "a1"}}, agent_id="a1", release_id="r1", version=1)
+    cache.set({"agent": {"id": "a2"}}, agent_id="a2", release_id="r2", version=1)
+    first = cache.get(agent_id="a1", release_id="r1", version=1)
+    assert first == {"agent": {"id": "a1"}}
+    first["agent"]["id"] = "mutated"
+    assert cache.get(agent_id="a1", release_id="r1", version=1) == {"agent": {"id": "a1"}}
+
+    cache.set({"agent": {"id": "a3"}}, agent_id="a3", release_id="r3", version=1)
+    redis.values.pop("test:aegora:agent:a2:release:r2:version:1", None)
+    assert cache.get(agent_id="a2", release_id="r2", version=1) is None
+
+
+def test_release_config_cache_delete_clears_l1_and_l2() -> None:
+    redis = FakeRedis()
+    cache = RedisReleaseConfigCache(
+        RuntimeCacheSettings(enabled=True, redis_url="redis://unused", key_prefix="test:aegora"),
+        client=redis,
+    )
+    cache.set({"agent": {"id": "a1"}}, agent_id="a1", release_id="r1", version=2)
+
+    cache.delete(agent_id="a1", release_id="r1", version=2)
+
+    assert cache.get(agent_id="a1", release_id="r1", version=2) is None

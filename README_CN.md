@@ -53,7 +53,7 @@ Runtime 在持久业务事实和配置事实层面保持无状态，但允许保
 
 - **PostgreSQL — 唯一事实源**：保存 Agent 草稿/不可变 Release、RBAC、能力状态、MCP 注册信息、学习策略、审计记录等持久控制面数据。
 - **Redis — 共享 L2 与事件层（目标能力）**：承载带版本号的 Runtime Context 缓存、失效/版本事件等可重建共享状态。Redis 不承担权威配置数据库职责。
-- **Runtime L1 — 进程内热点缓存**：缓存解析后的 Release/Runtime Context 等热点数据，使用版本化 Key 让发布或策略变化后的旧缓存自然失配。
+- **Runtime L1 — 进程内热点缓存**：在 Redis L2 前缓存有界的不可变 Release 静态配置；使用版本化 Key 隔离不同 Release，且绝不缓存可变鉴权事实。
 - **MCP Pool — 进程内连接复用**：每个 Runtime Pod 可复用 MCP Session/Connection，但池状态可随时丢弃并在重启后重建。
 - **LiteLLM Proxy — 统一模型网关**：Runtime 与 Control Plane 统一通过 OpenAI-compatible 接口使用稳定的 `aegora-chat` / `aegora-fast` 别名，真实 Provider Key 与具体模型名收敛在 LiteLLM 后方；`deploy/` 已包含 Staging 部署接线。
 - **Langfuse — Agent/LLM 可观测性**：Runtime 可选创建携带 Aegora trace/session/user 上下文的根 Span，LiteLLM 再通过 Langfuse OTEL 上报模型 Generation，使 Agent 执行与 token、延迟、成本等模型数据能够关联。
@@ -159,5 +159,5 @@ PYTHONPATH=src uvicorn apps.api_app:app --host 127.0.0.1 --port 5000
 
 1. 增加 Workflow Capability Adapter 与工作流注册 UX。
 2. 继续硬化 LiteLLM / Langfuse 生产链路：锁定验证过的镜像 Digest，增加多 Provider Fallback、预算策略与 Trace/Eval 看板。
-3. Redis L2 第一阶段已在 Roadmap 分支落地：Runtime 仅把不可变 Release `config_json` 放入版本化 Redis Key；Release 状态、RBAC、工具状态与 MCP Connection 状态仍实时读取 PostgreSQL。下一步补发布/撤销/工具策略变更事件驱动失效，以及有界 Runtime L1 缓存。
+3. Redis 缓存第一/二阶段已在 Roadmap 分支落地：Runtime 仅缓存不可变 Release `config_json`，链路为有界进程内 L1 + 版本化 Redis L2；Release 状态、RBAC、工具状态与 MCP Connection 状态仍实时读取 PostgreSQL。下一步补版本化的发布/撤销/工具策略变更事件，用于跨 Pod 显式收敛和可观测失效。
 4. 将已有 Reflection / Skill Draft 路径扩展为按 Agent 配置的学习策略、评测门禁与受治理数据飞轮。
