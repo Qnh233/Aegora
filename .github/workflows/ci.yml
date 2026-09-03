@@ -32,7 +32,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r apps/control-plane/backend/requirements.txt -r services/runtime/requirements.txt
 
-      - name: Run backend and runtime tests
+      - name: Run control-plane tests
+        working-directory: apps/control-plane/backend
+        run: pytest -q
+
+      - name: Run runtime tests
+        working-directory: services/runtime
+        env:
+          PYTHONPATH: src
         run: pytest -q
 
   frontend-build:
