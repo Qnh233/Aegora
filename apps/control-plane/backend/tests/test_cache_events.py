@@ -34,6 +34,10 @@ def test_runtime_invalidation_publisher_emits_versioned_release_event(monkeypatc
     assert payload["release_version"] == 4
     assert payload["event_id"]
     assert payload["occurred_at"]
+    metrics = publisher.delivery_metrics()
+    assert metrics["delivery_total"] == {"success": 1, "failure": 0, "disabled": 0}
+    assert metrics["last_success_at"]
+    assert metrics["last_failure_at"] is None
 
 
 def test_runtime_invalidation_publisher_is_fail_open(monkeypatch) -> None:
@@ -46,3 +50,19 @@ def test_runtime_invalidation_publisher_is_fail_open(monkeypatch) -> None:
     publisher = cache_events.RuntimeInvalidationPublisher(client=BrokenRedis())
 
     assert publisher.publish("tool.policy.changed", agent_id="*", tool_id="tool_1") is False
+    metrics = publisher.delivery_metrics()
+    assert metrics["delivery_total"] == {"success": 0, "failure": 1, "disabled": 0}
+    assert metrics["last_failure_at"]
+    assert metrics["last_error"] == "OSError: redis unavailable"
+
+
+def test_runtime_invalidation_publisher_counts_disabled_delivery(monkeypatch) -> None:
+    monkeypatch.setenv("RUNTIME_CONFIG_EVENTS_ENABLED", "false")
+    monkeypatch.setenv("RUNTIME_CONFIG_REDIS_URL", "redis://example/0")
+    publisher = cache_events.RuntimeInvalidationPublisher(client=FakeRedis())
+
+    assert publisher.publish("release.published", agent_id="agent_1") is False
+    metrics = publisher.delivery_metrics()
+    assert metrics["enabled"] is False
+    assert metrics["configured"] is True
+    assert metrics["delivery_total"] == {"success": 0, "failure": 0, "disabled": 1}

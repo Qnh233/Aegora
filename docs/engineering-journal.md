@@ -1,5 +1,16 @@
 # Engineering Journal
 
+## 2026-09-04 — Redis event fabric phase 3: producer delivery observability
+
+- **Objective / roadmap item:** close the remaining producer-side Redis event observability gap on PR #2 without copying the unrelated CI isolation changes from still-unmerged PR #1.
+- **Key design decisions / tradeoffs:** keep the publisher best-effort and dependency-light. Instead of adding a second Prometheus stack to the Control Plane, maintain thread-safe process-local low-cardinality counters for `success`, `failure`, and `disabled`, plus last success/failure timestamps and the latest compact error. Expose the snapshot only through an admin-authorized operational endpoint. Redis remains outside the request correctness path.
+- **Pitfalls / root causes:** the previous phase correctly avoided adding a new metrics dependency, but that left producer delivery opaque. The useful middle ground is an admin operational snapshot: enough to distinguish disabled configuration from actual Redis failures without making event delivery transactional or adding high-cardinality labels. Because FastAPI sync handlers may run concurrently, mutable counters require a lock even though the implementation is intentionally small.
+- **Highlights / reusable patterns:** separate `disabled` from `failure` so operators can distinguish rollout/configuration state from transport incidents; keep metrics process-local and disposable just like the publisher itself; protect the endpoint with the same platform-admin boundary as other operational controls; preserve fail-open publishing semantics.
+- **Important files / commands:** `apps/control-plane/backend/app/cache_events.py`, `app/api.py`, `tests/test_cache_events.py`, README/README_CN and `docs/migration.md`; focused verification uses isolated Control Plane pytest, `compileall`, and `git diff --check`.
+- **Verification:** Control Plane cache-event tests pass (`3 passed`); Python compileall and `git diff --check` pass. API code compiles with the new admin endpoint.
+- **Blockers:** PR #2 still inherits the known `main` single-process pytest collection failure; PR #1 contains the independent green CI isolation fix and remains unmerged. No code from that PR is duplicated here.
+- **Next step:** do not broaden Redis further by default. Validate whether long-lived MCP sessions can actually retain stale policy/connection state; if not, move to the next independent roadmap item such as LiteLLM/Langfuse production hardening or governed learning-policy gates.
+
 ## 2026-09-04 — Redis event fabric phase 2: consumer observability
 
 - **Objective / roadmap item:** close the next explicit Redis roadmap gap on the existing Redis PR by making cross-pod invalidation convergence measurable before adding more cache/session behavior.

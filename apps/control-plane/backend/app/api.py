@@ -621,6 +621,21 @@ def list_mcp_connections(
         raise HTTPException(status_code=503, detail="数据库不可用或未配置") from error
 
 
+@app.get("/admin/runtime-config-events/metrics")
+def runtime_config_event_metrics(
+    authorization: str | None = Header(default=None),
+) -> dict[str, object]:
+    """Expose publisher health without making Redis part of request correctness."""
+    try:
+        db.ensure_schema()
+        require_current_platform_admin(authorization)
+        return cache_events.get_runtime_invalidation_publisher().delivery_metrics()
+    except HTTPException:
+        raise
+    except (psycopg.Error, RuntimeError) as error:
+        raise HTTPException(status_code=503, detail="数据库不可用或未配置") from error
+
+
 @app.put(
     "/admin/mcp-connections/{connection_id}",
     response_model=MCPConnectionDefinition,
