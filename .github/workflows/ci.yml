@@ -34,6 +34,9 @@ jobs:
 
       - name: Run control-plane tests
         working-directory: apps/control-plane/backend
+        env:
+          DATABASE_URL: postgresql://aegora:aegora@127.0.0.1:5432/aegora_test
+          AUTH_MODE: local
         run: pytest -q
 
       - name: Run runtime tests
