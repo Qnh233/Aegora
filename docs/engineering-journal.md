@@ -12,9 +12,9 @@
 - **Runtime test configuration pitfall**: Runtime API modules construct real dependency objects at import time, so API tests need a non-empty `LLM_GATEWAY_API_KEY` even when model calls are monkeypatched later. CI supplies a dummy test key; no real provider call is introduced.
 - **Highlight / reusable pattern**: monorepos with multiple non-package test trees should make import semantics explicit. Keeping CI and local pytest behavior identical prevents a class of environment-only collection failures.
 - **Important files**: `pytest.ini`, `services/runtime/apps/__init__.py`, `.github/workflows/ci.yml`. CI now runs Control Plane and Runtime tests as separate commands/processes.
-- **Verification**: root `python -m pytest -q` now gets past the previous duplicate-test-name and project-import-path failures; the remaining local collection errors are missing environment dependencies (`psycopg`, `pocoflow`) that CI installs from the repository requirements. `git diff --check` passes. Final verification is the GitHub Actions re-run after push.
+- **Verification**: root `python -m pytest -q` now gets past the previous duplicate-test-name and project-import-path failures; the remaining local collection errors are missing environment dependencies (`psycopg`, `pocoflow`) that CI installs from the repository requirements. `git diff --check` passes. GitHub Actions run `33792659303` completed successfully: Control Plane tests passed, Runtime tests passed, and the frontend production build passed.
 - **Blockers**: the current Windows Python environment does not have the full repository requirements installed, so the local full suite cannot complete here. Email notification is unavailable in the current automation environment.
-- **Next step**: push the CI fix to PR #1, confirm both checks pass, then continue the latest independent roadmap item only after the pending branch is stable.
+- **Next step**: PR #1 is now CI-green and should remain unmerged until normal review/merge policy is satisfied. A later roadmap iteration can continue workflow lifecycle/versioning on this branch if review requires it, or start an independent branch for LiteLLM/Langfuse hardening or Redis L2 work when dependency boundaries are clear.
 
 ## 2026-09-04 — Workflow Capability phase 1
 
