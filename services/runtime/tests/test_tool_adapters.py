@@ -6,6 +6,7 @@ from aegora_runtime.tool_adapters import (
     MCPClientManager,
     build_runtime_tool_executor,
     call_mcp_tool_sync,
+    execute_tool_manifest,
     mcp_result_to_jsonable,
     warmup_runtime_mcp_clients,
 )
@@ -96,6 +97,45 @@ def test_adapter_validates_json_schema_required_and_type() -> None:
     )
     assert result["results"][0]["status"] == "error"
     assert "expects string" in result["results"][0]["error"]
+
+
+def test_workflow_capability_reuses_governed_mcp_adapter(monkeypatch) -> None:
+    captured = {}
+
+    def fake_call(tool, args, state):
+        captured.update({"tool": tool, "args": args, "trace_id": state.get("trace_id")})
+        return {"status": "submitted"}
+
+    monkeypatch.setattr("aegora_runtime.tool_adapters.call_mcp_tool_sync", fake_call)
+    workflow = {
+        "tool_id": "expense.submit",
+        "source": "workflow",
+        "runner_tool_id": "mcp+https://workflow.example.test/mcp",
+        "runner_name": "submit_expense",
+        "mcp_connection": {
+            "connection_id": "workflow.ops",
+            "transport": "streamable_http",
+            "config": {"url": "https://workflow.example.test/mcp"},
+        },
+        "input_schema": {
+            "type": "object",
+            "required": ["amount"],
+            "properties": {"amount": {"type": "number"}},
+        },
+    }
+
+    result = execute_tool_manifest(
+        workflow,
+        {"amount": 88.5},
+        {"trace_id": "trace-workflow"},
+        RunnerRegistry(),
+        {},
+    )
+
+    assert result == {"status": "submitted"}
+    assert captured["tool"]["source"] == "workflow"
+    assert captured["args"] == {"amount": 88.5}
+    assert captured["trace_id"] == "trace-workflow"
 
 
 def test_fastmcp_adapter_calls_in_memory_server(monkeypatch) -> None:

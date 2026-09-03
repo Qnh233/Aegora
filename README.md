@@ -188,7 +188,7 @@ This workspace is the consolidated successor of the existing Agent Platform and 
 
 Planned next steps:
 
-1. Add a Workflow Capability adapter and workflow registration UX.
+1. Workflow Capability phase 1 is implemented on the roadmap branch: administrators can register governed workflow capabilities backed by an existing MCP connection, and Runtime reuses the MCP execution adapter while preserving `source=workflow`. Next, add workflow version/lifecycle management and richer scope-schema editing.
 2. Harden the LiteLLM/Langfuse production path: pin tested image digests, add multi-provider fallback policies, budgets and trace/evaluation dashboards.
 3. Add Redis-backed L2 configuration caching plus version/event-driven invalidation, keeping runtime L1 caches disposable.
 4. Generalize the existing reflection/Skill-draft path into per-Agent learning policies, evaluation gates and the governed data flywheel described above.

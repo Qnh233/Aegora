@@ -157,7 +157,7 @@ PYTHONPATH=src uvicorn apps.api_app:app --host 127.0.0.1 --port 5000
 
 下一步重点：
 
-1. 增加 Workflow Capability Adapter 与工作流注册 UX。
+1. Workflow Capability 第一阶段已在 Roadmap 分支落地：管理员可以基于已有 MCP Connection 注册受治理工作流能力，Runtime 复用 MCP 执行适配器并保留 `source=workflow` 语义。下一步补充工作流版本/生命周期管理与更完整的 Scope Schema 编辑。
 2. 继续硬化 LiteLLM / Langfuse 生产链路：锁定验证过的镜像 Digest，增加多 Provider Fallback、预算策略与 Trace/Eval 看板。
 3. 引入 Redis L2 配置缓存、版本化 Key 与事件驱动失效机制，同时保持 Runtime L1 可丢弃。
 4. 将已有 Reflection / Skill Draft 路径扩展为按 Agent 配置的学习策略、评测门禁与受治理数据飞轮。

@@ -7,7 +7,16 @@ from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from uuid import uuid4
 
-from . import config, db, identity, mcp_discovery, runner, runtime_context, tools as local_tools
+from . import (
+    config,
+    db,
+    identity,
+    mcp_discovery,
+    runner,
+    runtime_context,
+    tools as local_tools,
+    workflow_capabilities,
+)
 from .authz import (
     effective_tools,
     merge_tool_scopes,
@@ -49,6 +58,7 @@ from .models import (
     ToolStatusRequest,
     UserProfile,
     UserRequest,
+    WorkflowCapabilityRequest,
 )
 
 app = FastAPI(title="Agent Platform")
@@ -531,8 +541,8 @@ def tool_definition_from_request(tool_id: str, request: ToolRequest) -> ToolDefi
     connection = None
     runner_tool_id = request.runner_tool_id
     if request.mcp_connection_id:
-        if request.source != "mcp":
-            raise HTTPException(status_code=422, detail="只有 MCP 工具可以绑定 MCP 连接")
+        if request.source not in {"mcp", "workflow"}:
+            raise HTTPException(status_code=422, detail="只有 MCP/Workflow 能力可以绑定 MCP 连接")
         connection = db.fetch_mcp_connection(request.mcp_connection_id)
         if connection is None:
             raise HTTPException(status_code=422, detail="MCP 连接不存在")
@@ -565,6 +575,20 @@ def tool_definition_from_request(tool_id: str, request: ToolRequest) -> ToolDefi
         scope_schema=request.scope_schema,
         scope_descriptions=request.scope_descriptions,
         manifest_hash=request.manifest_hash or "",
+    )
+
+
+def workflow_definition_from_request(
+    workflow_id: str,
+    request: WorkflowCapabilityRequest,
+) -> ToolDefinition:
+    connection = db.fetch_mcp_connection(request.mcp_connection_id)
+    if connection is None:
+        raise HTTPException(status_code=422, detail="MCP 连接不存在")
+    return workflow_capabilities.build_workflow_capability(
+        workflow_id,
+        request,
+        connection,
     )
 
 
@@ -703,6 +727,31 @@ def set_tool(tool_id: str, request: ToolRequest) -> ToolDefinition:
         raise HTTPException(status_code=503, detail="数据库不可用或未配置") from error
     return tool.model_copy(
         update={"manifest_hash": tool.manifest_hash or db.compute_tool_manifest_hash(tool)}
+    )
+
+
+@app.put("/admin/workflows/{workflow_id}", response_model=ToolDefinition)
+def set_workflow_capability(
+    workflow_id: str,
+    request: WorkflowCapabilityRequest,
+    authorization: str | None = Header(default=None),
+) -> ToolDefinition:
+    if not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9._-]{0,99}", workflow_id):
+        raise HTTPException(status_code=422, detail="workflow_id 格式不合法")
+    try:
+        db.ensure_schema()
+        require_current_platform_admin(authorization)
+        workflow = workflow_definition_from_request(workflow_id, request)
+        db.upsert_tool(workflow)
+    except HTTPException:
+        raise
+    except (psycopg.Error, RuntimeError) as error:
+        raise HTTPException(status_code=503, detail="数据库不可用或未配置") from error
+    return workflow.model_copy(
+        update={
+            "manifest_hash": workflow.manifest_hash
+            or db.compute_tool_manifest_hash(workflow)
+        }
     )
 
 

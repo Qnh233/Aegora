@@ -170,7 +170,7 @@ type ToolDefinition = {
   name: string;
   description: string;
   status: string;
-  source: "mcp" | "http" | "workflow_agent" | "local";
+  source: "mcp" | "http" | "workflow" | "workflow_agent" | "local";
   runner_tool_id: string | null;
   runner_name: string | null;
   mcp_connection_id: string | null;
@@ -259,6 +259,7 @@ function visibilityTag(agent: Agent) {
 function sourceColor(source: ToolDefinition["source"]) {
   if (source === "local") return "green";
   if (source === "mcp") return "geekblue";
+  if (source === "workflow") return "purple";
   if (source === "workflow_agent") return "magenta";
   return "blue";
 }
@@ -266,6 +267,7 @@ function sourceColor(source: ToolDefinition["source"]) {
 function sourceLabel(source: ToolDefinition["source"]) {
   if (source === "local") return "本地工具";
   if (source === "mcp") return "MCP 工具";
+  if (source === "workflow") return "工作流能力";
   if (source === "workflow_agent") return "工作流 Agent";
   return "HTTP 工具";
 }
@@ -553,6 +555,7 @@ export default function App() {
   const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
   const [editingMcpConnection, setEditingMcpConnection] = useState<MCPConnection | null>(null);
   const [mcpConnectionEditorOpen, setMcpConnectionEditorOpen] = useState(false);
+  const [workflowEditorOpen, setWorkflowEditorOpen] = useState(false);
   const [lastRun, setLastRun] = useState<RunResult | null>(null);
   const [submittingApprovalId, setSubmittingApprovalId] = useState<string | null>(null);
   const [expandedToolLayers, setExpandedToolLayers] = useState<string[]>([]);
@@ -563,6 +566,7 @@ export default function App() {
   const [runForm] = Form.useForm();
   const [roleEditorForm] = Form.useForm();
   const [mcpConnectionForm] = Form.useForm();
+  const [workflowForm] = Form.useForm();
   const selectedAgentId = Form.useWatch("agent_id", runForm);
   const debugMode = Form.useWatch("mode", runForm) ?? "draft";
   const selectedReleaseId = Form.useWatch("release_id", runForm);
@@ -2406,6 +2410,61 @@ export default function App() {
       }
     }
 
+    function openWorkflowEditor() {
+      workflowForm.resetFields();
+      workflowForm.setFieldsValue({
+        version: "dev",
+        requires_approval: false,
+        side_effect_level: "internal_write",
+        timeout_ms: 30000,
+        input_schema_text: '{\n  "type": "object",\n  "properties": {}\n}'
+      });
+      setWorkflowEditorOpen(true);
+    }
+
+    async function saveWorkflowCapability() {
+      const values = await workflowForm.validateFields();
+      let inputSchema: Record<string, unknown> = {};
+      try {
+        inputSchema = JSON.parse(values.input_schema_text || "{}") as Record<string, unknown>;
+      } catch {
+        toast.error("Input Schema 必须是合法 JSON");
+        return;
+      }
+      setLoading(true);
+      try {
+        await request(
+          `/admin/workflows/${values.workflow_id}`,
+          {
+            method: "PUT",
+            body: JSON.stringify({
+              name: values.name,
+              description: values.description || "",
+              status: "active",
+              mcp_connection_id: values.mcp_connection_id,
+              runner_name: values.runner_name,
+              version: values.version || "dev",
+              requires_approval: Boolean(values.requires_approval),
+              side_effect_level: values.side_effect_level || "internal_write",
+              data_sensitivity: "internal",
+              timeout_ms: values.timeout_ms || 30000,
+              input_schema: inputSchema,
+              scope_schema: {},
+              scope_descriptions: {}
+            })
+          },
+          authToken
+        );
+        await refresh();
+        setWorkflowEditorOpen(false);
+        toast.success(`工作流能力 ${values.workflow_id} 已注册`);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "工作流能力注册失败");
+      } finally {
+        setLoading(false);
+      }
+    }
+
     return (
       <section className="tool-governance">
         <div className="access-intro">
@@ -2414,7 +2473,17 @@ export default function App() {
             <Typography.Title level={4}>工具运行开关</Typography.Title>
             <Typography.Text>Manifest 来自 Runner 或 seed；控制台只负责查看和启停。</Typography.Text>
           </div>
-          <Tag color="orange">管理员专用</Tag>
+          <Space wrap>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={openWorkflowEditor}
+              disabled={!mcpConnections.length}
+            >
+              注册工作流能力
+            </Button>
+            <Tag color="orange">管理员专用</Tag>
+          </Space>
         </div>
 
         <div className="panel">
@@ -2678,6 +2747,80 @@ export default function App() {
             </div>
           ))}
         </div>
+
+        <Modal
+          title="注册工作流能力"
+          open={workflowEditorOpen}
+          confirmLoading={loading}
+          onOk={saveWorkflowCapability}
+          onCancel={() => setWorkflowEditorOpen(false)}
+          okText="注册"
+          cancelText="取消"
+          width={640}
+        >
+          <Alert
+            type="info"
+            showIcon
+            message="Workflow 作为受治理 Capability 暴露"
+            description="工作流执行复用已登记的 MCP 连接；Release 和运行时权限仍决定最终可调用范围。"
+            style={{ marginBottom: 16 }}
+          />
+          <Form form={workflowForm} layout="vertical">
+            <Form.Item
+              name="workflow_id"
+              label="Workflow ID"
+              rules={[
+                { required: true },
+                { pattern: /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,99}$/, message: "仅支持字母、数字、点、下划线和横线" }
+              ]}
+            >
+              <Input placeholder="expense.submit" />
+            </Form.Item>
+            <Form.Item name="name" label="名称" rules={[{ required: true }]}>
+              <Input placeholder="提交报销审批" />
+            </Form.Item>
+            <Form.Item name="description" label="描述">
+              <Input.TextArea rows={2} placeholder="说明该工作流的业务边界和预期结果" />
+            </Form.Item>
+            <Space wrap size="large">
+              <Form.Item name="mcp_connection_id" label="MCP 连接" rules={[{ required: true }]}>
+                <Select
+                  style={{ minWidth: 220 }}
+                  options={mcpConnections
+                    .filter((connection) => connection.status === "active")
+                    .map((connection) => ({ value: connection.connection_id, label: connection.name }))}
+                />
+              </Form.Item>
+              <Form.Item name="runner_name" label="远端 Workflow Tool" rules={[{ required: true }]}>
+                <Input placeholder="submit_expense" />
+              </Form.Item>
+            </Space>
+            <Space wrap size="large">
+              <Form.Item name="version" label="版本">
+                <Input placeholder="v1" />
+              </Form.Item>
+              <Form.Item name="timeout_ms" label="超时（ms）">
+                <InputNumber min={100} max={300000} />
+              </Form.Item>
+              <Form.Item name="requires_approval" valuePropName="checked" label="治理">
+                <Checkbox>调用前需要审批</Checkbox>
+              </Form.Item>
+            </Space>
+            <Form.Item name="side_effect_level" label="副作用等级">
+              <Select
+                options={[
+                  { label: "仅读取外部数据", value: "external_read" },
+                  { label: "内部写入", value: "internal_write" },
+                  { label: "外部写入", value: "external_write" },
+                  { label: "破坏性操作", value: "destructive" }
+                ]}
+              />
+            </Form.Item>
+            <Form.Item name="input_schema_text" label="Input Schema (JSON)" rules={[{ required: true }]}>
+              <Input.TextArea rows={7} />
+            </Form.Item>
+          </Form>
+        </Modal>
 
         <Modal
           title={editingMcpConnection ? "编辑 MCP 连接" : "新增 MCP 连接"}
