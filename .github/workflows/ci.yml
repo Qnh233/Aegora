@@ -33,6 +33,9 @@ jobs:
           pip install -r apps/control-plane/backend/requirements.txt -r services/runtime/requirements.txt
 
       - name: Run backend and runtime tests
+        env:
+          DATABASE_URL: ******localhost:5432/aegora_test
+          LLM_GATEWAY_API_KEY: sk-test
         run: pytest -q
 
   frontend-build:

@@ -8,4 +8,4 @@ testpaths = [
   "services/runtime/tests",
   "apps/control-plane/backend/tests",
 ]
-
+addopts = ["--import-mode=importlib"]
