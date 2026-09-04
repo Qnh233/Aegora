@@ -34,7 +34,7 @@ jobs:
 
       - name: Run backend and runtime tests
         env:
-          DATABASE_URL: ******localhost:5432/aegora_test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/aegora_test
           LLM_GATEWAY_API_KEY: sk-test
         run: pytest -q
 

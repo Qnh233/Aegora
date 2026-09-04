@@ -9,3 +9,4 @@ testpaths = [
   "apps/control-plane/backend/tests",
 ]
 addopts = ["--import-mode=importlib"]
+

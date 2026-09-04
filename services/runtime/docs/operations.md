@@ -410,6 +410,16 @@ PYTHONPATH=src python scripts/run_perf_eval.py \
 PYTHONPATH=src python scripts/eval_skills.py
 ```
 
+Agent 生成的 Skill 不允许仅靠修改生命周期状态直接上线。`source=agent` 在进入 `active` 前必须同时满足：
+
+- `metadata.evaluation.status = "passed"`
+- `metadata.evaluation.dataset` 记录评测集或其版本/哈希
+- `metadata.evaluation.metrics` 为非空指标对象
+- `metadata.evaluation.evaluated_at` 记录评测时间
+- `reviewed_by` 为明确人工审核者
+
+该门禁同时作用于本地 `scripts/skills.py publish` 与 Strapi 内容同步，避免 CMS 路径绕过 Runtime 治理。
+
 ## 常用排障
 
 | 问题 | 检查 |

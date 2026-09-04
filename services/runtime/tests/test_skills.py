@@ -5,6 +5,7 @@ from pathlib import Path
 
 from aegora_runtime.config import load_settings
 from aegora_runtime.skills import (
+    agent_skill_promotion_errors,
     build_skill_embedding_text,
     select_skills,
     skill_index_item,
@@ -45,6 +46,35 @@ def test_validate_skill_rejects_domain_without_product() -> None:
 
 def test_validate_skill_rejects_long_content() -> None:
     assert any("不能超过" in error for error in validate_skill(candidate(content="x" * 1001), 1000))
+
+
+def test_agent_skill_promotion_requires_auditable_evaluation() -> None:
+    row = candidate(source="agent", metadata={})
+    errors = agent_skill_promotion_errors(row)
+
+    assert any("status=passed" in error for error in errors)
+    assert any("evaluation.dataset" in error for error in errors)
+    assert any("evaluation.metrics" in error for error in errors)
+    assert any("evaluation.evaluated_at" in error for error in errors)
+    assert any("reviewed_by" in error for error in errors)
+
+
+def test_agent_skill_promotion_accepts_passed_evaluation_and_manual_skills() -> None:
+    evaluated = candidate(
+        source="agent",
+        reviewed_by="reviewer-1",
+        metadata={
+            "evaluation": {
+                "status": "passed",
+                "dataset": "eval_skills.jsonl@sha256:abc",
+                "metrics": {"accuracy": 1.0, "regressions": 0},
+                "evaluated_at": "2026-09-04T03:00:00Z",
+            }
+        },
+    )
+
+    assert agent_skill_promotion_errors(evaluated) == []
+    assert agent_skill_promotion_errors(candidate(source="manual", metadata={})) == []
 
 
 def test_commercial_skill_requires_explicit_or_strong_related_trigger() -> None:

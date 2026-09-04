@@ -10,7 +10,7 @@ from typing import Any
 from aegora_runtime.config import load_settings
 from aegora_runtime.db import connect
 from aegora_runtime.embeddings import build_encoder, vector_literal
-from aegora_runtime.skills import build_skill_embedding_text, skill_content_hash, validate_skill
+from aegora_runtime.skills import agent_skill_promotion_errors, build_skill_embedding_text, skill_content_hash, validate_skill
 
 
 def main() -> None:
@@ -204,6 +204,7 @@ def update_status(skill_id: int, action: str, reviewer: str | None, settings) ->
                 raise ValueError(f"Skill 不存在: {skill_id}")
             if action == "publish":
                 errors = validate_skill(dict(row), settings.skills.max_content_chars)
+                errors.extend(agent_skill_promotion_errors(dict(row), reviewer))
                 if errors:
                     raise ValueError("\n".join(errors))
             cur.execute(

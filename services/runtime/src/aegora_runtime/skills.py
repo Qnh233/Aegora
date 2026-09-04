@@ -85,6 +85,34 @@ def validate_skill(skill: dict[str, Any], max_content_chars: int) -> list[str]:
     return errors
 
 
+def agent_skill_promotion_errors(skill: dict[str, Any], reviewer: str | None = None) -> list[str]:
+    """Agent 生成的 Skill 只有带可审计评测证据时才允许晋级。"""
+    if skill.get("source", "manual") != "agent":
+        return []
+
+    metadata = skill.get("metadata") or {}
+    if not isinstance(metadata, dict):
+        return ["agent Skill metadata 必须是对象"]
+    evaluation = metadata.get("evaluation") or {}
+    if not isinstance(evaluation, dict):
+        return ["agent Skill 晋级前必须提供 metadata.evaluation 对象"]
+
+    errors = []
+    if evaluation.get("status") != "passed":
+        errors.append("agent Skill 晋级前必须通过评测（metadata.evaluation.status=passed）")
+    if not isinstance(evaluation.get("dataset"), str) or not evaluation["dataset"].strip():
+        errors.append("agent Skill 晋级前必须记录评测数据集 metadata.evaluation.dataset")
+    metrics = evaluation.get("metrics")
+    if not isinstance(metrics, dict) or not metrics:
+        errors.append("agent Skill 晋级前必须记录非空 metadata.evaluation.metrics")
+    if not isinstance(evaluation.get("evaluated_at"), str) or not evaluation["evaluated_at"].strip():
+        errors.append("agent Skill 晋级前必须记录 metadata.evaluation.evaluated_at")
+    reviewer_name = reviewer if reviewer is not None else skill.get("reviewed_by")
+    if not isinstance(reviewer_name, str) or not reviewer_name.strip():
+        errors.append("agent Skill 晋级前必须记录明确的人工审核者 reviewed_by")
+    return errors
+
+
 def retrieve_skills(
     query_vector: Sequence[float],
     *,
