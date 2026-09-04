@@ -1,6 +1,6 @@
 services:
   litellm:
-    image: ${LITELLM_IMAGE:-docker.litellm.ai/berriai/litellm:main-latest}
+    image: ${LITELLM_IMAGE:?set LITELLM_IMAGE to an immutable @sha256 digest reference}
     restart: unless-stopped
     env_file:
       - .env

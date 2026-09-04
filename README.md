@@ -189,7 +189,7 @@ This workspace is the consolidated successor of the existing Agent Platform and 
 Planned next steps:
 
 1. Add a Workflow Capability adapter and workflow registration UX.
-2. Harden the LiteLLM/Langfuse production path: pin tested image digests, add multi-provider fallback policies, budgets and trace/evaluation dashboards.
+2. Harden the LiteLLM/Langfuse production path: staging now requires an explicitly tested immutable LiteLLM image digest; next add multi-provider fallback policies, budgets and trace/evaluation dashboards.
 3. Add Redis-backed L2 configuration caching plus version/event-driven invalidation, keeping runtime L1 caches disposable.
 4. Generalize the existing reflection/Skill-draft path into per-Agent learning policies, evaluation gates and the governed data flywheel described above.
 

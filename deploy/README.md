@@ -23,6 +23,8 @@ Control Plane 与 Runtime 可以独立扩缩容；Runtime 保持业务无状态�
 
 `deploy/litellm-config.yaml` 是统一模型入口配置。应用只认识 `aegora-chat` 与 `aegora-fast` 两个稳定别名；真实 Provider、模型名和 Key 只存在于 LiteLLM 环境配置中。Runtime 与 Control Plane 都通过 OpenAI-compatible `/v1` 接口访问 LiteLLM，因此 Provider 切换不要求修改 Agent 业务代码。
 
+Staging/production 的 LiteLLM 镜像必须使用不可变 `@sha256:` 引用，而不是 `main-latest`、`stable` 等可移动 tag。GitHub Environment 负责保存已完成兼容性验证的 digest；部署 workflow 会在拉取前校验 digest 格式，并在拉取后用 `docker image inspect` 确认镜像已经存在。这样升级 LiteLLM 变成一次显式、可审计的发布决策，而不会因为上游 tag 漂移在无代码变更时悄悄换版本。LiteLLM 官方也建议生产使用经过稳定性测试的 stable release，并支持对官方 GHCR 镜像做签名验证；Aegora 在选定 release 后进一步固定其 digest。
+
 Langfuse 使用两条互补链路：Runtime 用 Python SDK v4 为每次 Agent run 建立根 span，并根据现有 `trace_id` 生成确定性的 Langfuse Trace ID；LiteLLM 用 `langfuse_otel` callback 自动记录模型输入输出、token、延迟和错误。Runtime 会把同一个 Langfuse `trace_id` 作为 LiteLLM `metadata` 发送，使 Agent trace 与 LLM generation 落在同一条 Trace 中。
 
 Runtime 侧 tracing 是非关键依赖：`LANGFUSE_TRACING_ENABLED=false` 时不会创建应用 span；SDK 初始化异常也不会阻断 Agent 请求。使用当前 LiteLLM 配置时，staging/production 需要提供有效的 Langfuse Key，否则应移除/关闭 Proxy 的 `langfuse_otel` callback。
@@ -146,6 +148,14 @@ STAGING_USER       专用部署用户，不建议使用 root
 STAGING_SSH_KEY    部署用户私钥
 ```
 
+再添加 Environment variable（非 secret）：
+
+```text
+LITELLM_IMAGE=ghcr.io/berriai/litellm@sha256:<经过 staging 验证的 64 位 digest>
+```
+
+升级 LiteLLM 时，先在独立验证环境确认目标 release 与 `deploy/litellm-config.yaml`、Langfuse exporter 和 Aegora 两个稳定模型别名兼容，再把该 release 对应的 immutable digest 更新到 `staging` Environment。不要把 `main-latest`、`latest` 或只有 `-stable` tag 的引用直接填入这里。
+
 Workflow 使用当前 Job 的短生命周期 `GITHUB_TOKEN` 登录 GHCR，并显式授予 `packages: read`；不需要额外保存长期 GHCR PAT。首版默认 SSH 端口为 `22`。部署用户需要能够：
 
 - 写入 `/opt/aegora`；
@@ -161,6 +171,8 @@ Workflow 使用当前 Job 的短生命周期 `GITHUB_TOKEN` 登录 GHCR，并显
 3. GitHub -> Actions -> `Deploy Staging` -> Run workflow。
 4. `image_tag` 留空时使用当前选中 `main` 的 SHA；也可以显式输入目标 SHA。
 5. Workflow 上传最新 compose，拉取三个同版本镜像，启动后检查 Runtime `/healthz`、Backend `/auth/config` 和 Web 首页。
+
+部署还会在启动前校验 `LITELLM_IMAGE` 必须是合法的 `@sha256:` 引用，因此 LiteLLM 与 Aegora 应用镜像都具备明确的回滚坐标：Aegora 使用 Git SHA，LiteLLM 使用 OCI digest。服务健康后，workflow 会从 LiteLLM 容器内部带 Master Key 调用 `/v1/models`，要求 `aegora-chat` 与 `aegora-fast` 两个稳定别名都存在；这个检查不会产生一次真实 completion 的模型费用，却能提前发现“镜像能启动但配置/版本不兼容”的问题。
 
 回滚不重新构建：重新运行 `Deploy Staging`，把 `image_tag` 填成上一个稳定 Git SHA 即可。
 

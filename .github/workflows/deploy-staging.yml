@@ -55,18 +55,36 @@ jobs:
           GHCR_OWNER: ${{ steps.vars.outputs.owner }}
           GHCR_USERNAME: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LITELLM_IMAGE: ${{ vars.LITELLM_IMAGE }}
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
-          envs: AEGORA_IMAGE_TAG,GHCR_OWNER,GHCR_USERNAME,GHCR_TOKEN
+          envs: AEGORA_IMAGE_TAG,GHCR_OWNER,GHCR_USERNAME,GHCR_TOKEN,LITELLM_IMAGE
           script: |
             set -eu
             cd /opt/aegora
             test -f .env
+
+            # Supply-chain guard: staging only accepts an immutable LiteLLM
+            # digest selected in the protected GitHub Environment.
+            case "$LITELLM_IMAGE" in
+              *@sha256:*) ;;
+              *)
+                echo "LITELLM_IMAGE must be an immutable image reference ending in @sha256:<64-hex-digest>" >&2
+                exit 1
+                ;;
+            esac
+            LITELLM_DIGEST="${LITELLM_IMAGE##*@sha256:}"
+            if [ "${#LITELLM_DIGEST}" -ne 64 ] || ! printf '%s' "$LITELLM_DIGEST" | grep -Eq '^[0-9a-fA-F]{64}$'; then
+              echo "LITELLM_IMAGE contains an invalid sha256 digest" >&2
+              exit 1
+            fi
+
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
-            export AEGORA_IMAGE_TAG GHCR_OWNER
+            export AEGORA_IMAGE_TAG GHCR_OWNER LITELLM_IMAGE
             docker compose -f docker-compose.staging.yml pull
+            docker image inspect "$LITELLM_IMAGE" >/dev/null
             docker compose -f docker-compose.staging.yml up -d --remove-orphans
             docker compose -f docker-compose.staging.yml ps
 
@@ -83,4 +101,28 @@ jobs:
               sleep 3
             done
 
+            # Compatibility smoke test without a billable completion: query the
+            # authenticated model registry from inside the LiteLLM container and
+            # require Aegora's stable aliases to be present.
+            docker compose -f docker-compose.staging.yml exec -T litellm python - <<'PY'
+            import json
+            import os
+            import urllib.request
+
+            request = urllib.request.Request(
+                "http://127.0.0.1:4000/v1/models",
+                headers={"Authorization": f"Bearer {os.environ['LITELLM_MASTER_KEY']}"},
+            )
+            with urllib.request.urlopen(request, timeout=5) as response:
+                payload = json.load(response)
+
+            available = {item.get("id") for item in payload.get("data", [])}
+            required = {"aegora-chat", "aegora-fast"}
+            missing = sorted(required - available)
+            if missing:
+                raise SystemExit(f"LiteLLM missing required Aegora aliases: {missing}")
+            print("LiteLLM model aliases verified:", ", ".join(sorted(required)))
+            PY
+
             echo "Aegora staging is healthy at image tag: $AEGORA_IMAGE_TAG"
+            echo "LiteLLM image: $LITELLM_IMAGE"
