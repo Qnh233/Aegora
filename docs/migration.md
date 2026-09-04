@@ -21,5 +21,5 @@
 - 建立跨服务合同包；
 - 建立仓库级验证脚本。
 
-LiteLLM Proxy 与 Langfuse 的基础接入已在迁移后的统一 Runtime/Deploy 边界内落地。Learning Flywheel 已补齐证据血缘、第一阶段 per-Agent learning policy，以及 Agent Skill 的基础晋级门禁：配置化 Agent 的会话会持久化 Agent/Release 身份与 Release 级学习策略快照，反思聚类禁止跨 Agent 混合，可按 Agent 关闭证据采集，Skill 草稿生成采用显式 opt-in；未授权的高价值聚类仅进入人工学习复核。`source=agent` Skill 若缺少通过的评测记录、显式 criteria、通过的基线回归对比或人工审核者，则无论本地 publish 还是 Strapi 同步都不能进入 `active`；评测脚本可为单条未发布候选生成绑定数据集哈希与 Skill 内容哈希的证据，并用上一份已接受 evaluation artifact 作为回归基线，评测后内容变化会使原证据失效。后续继续实现 Canary 与更完整的晋级策略。Workflow Registry、Redis L1/L2 与模型网关/Trace 的生产级硬化仍按独立阶段推进，避免多个高风险能力同时大改造成不可验证状态。
+LiteLLM Proxy 与 Langfuse 的基础接入已在迁移后的统一 Runtime/Deploy 边界内落地。Learning Flywheel 已补齐证据血缘、第一阶段 per-Agent learning policy，以及 Agent Skill 的基础晋级门禁：配置化 Agent 的会话会持久化 Agent/Release 身份与 Release 级学习策略快照，反思聚类禁止跨 Agent 混合，可按 Agent 关闭证据采集，Skill 草稿生成采用显式 opt-in；未授权的高价值聚类仅进入人工学习复核。`source=agent` Skill 若缺少通过的评测记录、显式 criteria、通过的基线回归对比、绑定同一候选内容的通过 Canary 证据或人工审核者，则无论本地 publish 还是 Strapi 同步都不能进入 `active`。Canary 证据必须声明 `shadow`/`limited` 模式、正样本量、非空指标和观测时间；评测脚本仍负责生成绑定数据集哈希与 Skill 内容哈希的离线证据，并用上一份已接受 evaluation artifact 作为回归基线。后续继续实现真实受控流量 Canary 证据采集与更完整的晋级策略。Workflow Registry、Redis L1/L2 与模型网关/Trace 的生产级硬化仍按独立阶段推进，避免多个高风险能力同时大改造成不可验证状态。
 

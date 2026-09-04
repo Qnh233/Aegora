@@ -58,6 +58,7 @@ def test_agent_skill_promotion_requires_auditable_evaluation() -> None:
     assert any("evaluation.metrics" in error for error in errors)
     assert any("evaluation.criteria" in error for error in errors)
     assert any("evaluation.regression" in error for error in errors)
+    assert any("evaluation.canary" in error for error in errors)
     assert any("evaluation.evaluated_at" in error for error in errors)
     assert any("reviewed_by" in error for error in errors)
 
@@ -75,6 +76,14 @@ def test_agent_skill_promotion_accepts_passed_evaluation_and_manual_skills() -> 
             "metrics": {"accuracy": 1.0, "regressions": 0},
             "criteria": {"min_injection_accuracy": 1.0},
             "regression": {"status": "passed"},
+            "canary": {
+                "status": "passed",
+                "mode": "shadow",
+                "sample_size": 50,
+                "metrics": {"misinjection_rate": 0.0},
+                "observed_at": "2026-09-04T04:00:00Z",
+                "content_hash": skill_content_hash(evaluated),
+            },
             "evaluated_at": "2026-09-04T03:00:00Z",
         }
     }
@@ -93,6 +102,14 @@ def test_agent_skill_promotion_rejects_stale_evaluation_after_content_change() -
             "metrics": {"accuracy": 1.0},
             "criteria": {"min_injection_accuracy": 1.0},
             "regression": {"status": "passed"},
+            "canary": {
+                "status": "passed",
+                "mode": "limited",
+                "sample_size": 10,
+                "metrics": {"misinjection_rate": 0.0},
+                "observed_at": "2026-09-04T04:00:00Z",
+                "content_hash": skill_content_hash(evaluated),
+            },
             "evaluated_at": "2026-09-04T03:00:00Z",
         }
     }
@@ -101,6 +118,36 @@ def test_agent_skill_promotion_rejects_stale_evaluation_after_content_change() -
     errors = agent_skill_promotion_errors(evaluated)
 
     assert any("评测证据已过期" in error for error in errors)
+
+
+def test_agent_skill_promotion_rejects_invalid_canary_evidence() -> None:
+    evaluated = candidate(source="agent", reviewed_by="reviewer-1")
+    evaluated["metadata"] = {
+        "evaluation": {
+            "status": "passed",
+            "dataset": "eval_skills.jsonl@sha256:abc",
+            "content_hash": skill_content_hash(evaluated),
+            "metrics": {"accuracy": 1.0},
+            "criteria": {"min_injection_accuracy": 1.0},
+            "regression": {"status": "passed"},
+            "canary": {
+                "status": "passed",
+                "mode": "limited",
+                "sample_size": 0,
+                "metrics": {},
+                "observed_at": "",
+                "content_hash": "stale",
+            },
+            "evaluated_at": "2026-09-04T03:00:00Z",
+        }
+    }
+
+    errors = agent_skill_promotion_errors(evaluated)
+
+    assert any("sample_size" in error for error in errors)
+    assert any("Canary 必须记录非空 metrics" in error for error in errors)
+    assert any("observed_at" in error for error in errors)
+    assert any("Canary 证据已过期" in error for error in errors)
 
 
 def test_commercial_skill_requires_explicit_or_strong_related_trigger() -> None:

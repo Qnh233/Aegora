@@ -430,10 +430,14 @@ Agent 生成的 Skill 不允许仅靠修改生命周期状态直接上线。`sou
 - `metadata.evaluation.metrics` 为非空指标对象
 - `metadata.evaluation.criteria` 为非空门禁条件
 - `metadata.evaluation.regression.status = "passed"`
+- `metadata.evaluation.canary.status = "passed"`
+- `metadata.evaluation.canary.mode` 为 `shadow` 或 `limited`
+- `metadata.evaluation.canary.sample_size` 为正整数，且 `metrics` 非空、`observed_at` 非空
+- `metadata.evaluation.canary.content_hash` 与离线评测的 `content_hash` 一致
 - `metadata.evaluation.evaluated_at` 记录评测时间
 - `reviewed_by` 为明确人工审核者
 
-该门禁同时作用于本地 `scripts/skills.py publish` 与 Strapi 内容同步，避免 CMS 路径绕过 Runtime 治理。
+该门禁同时作用于本地 `scripts/skills.py publish` 与 Strapi 内容同步，避免 CMS 路径绕过 Runtime 治理。当前只定义并校验 Canary 晋级证据合同；真实 `shadow`/`limited` 流量的采集器仍需作为独立受控发布能力实现，不能用手工伪造的零样本结果绕过。
 
 ## 常用排障
 
