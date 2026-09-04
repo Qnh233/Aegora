@@ -21,5 +21,5 @@
 - 建立跨服务合同包；
 - 建立仓库级验证脚本。
 
-LiteLLM Proxy 与 Langfuse 的基础接入已在迁移后的统一 Runtime/Deploy 边界内落地。Learning Flywheel 已补齐第一阶段证据血缘：配置化 Agent 的会话会持久化 Agent/Release 身份，反思聚类禁止跨 Agent 混合，Skill 草稿保留来源 Agent 与 trace ids；后续继续实现 per-Agent learning policy、评测/晋级门禁。Workflow Registry、Redis L1/L2 与模型网关/Trace 的生产级硬化仍按独立阶段推进，避免多个高风险能力同时大改造成不可验证状态。
+LiteLLM Proxy 与 Langfuse 的基础接入已在迁移后的统一 Runtime/Deploy 边界内落地。Learning Flywheel 已补齐证据血缘和第一阶段 per-Agent learning policy：配置化 Agent 的会话会持久化 Agent/Release 身份与 Release 级学习策略快照，反思聚类禁止跨 Agent 混合，可按 Agent 关闭证据采集，Skill 草稿生成采用显式 opt-in；未授权的高价值聚类仅进入人工学习复核。后续继续实现评测/晋级门禁。Workflow Registry、Redis L1/L2 与模型网关/Trace 的生产级硬化仍按独立阶段推进，避免多个高风险能力同时大改造成不可验证状态。
 

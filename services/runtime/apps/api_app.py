@@ -554,6 +554,7 @@ def run_configured_request(
         "agent_id": agent_id,
         "release_id": release_id,
         "release_version": release.get("version"),
+        "learning_policy": context.get("learning_policy") or {},
     }
     try:
         save_chat_turn(
@@ -626,6 +627,7 @@ def run_configured_webhook_request(
                 "agent_id": agent_id,
                 "release_id": release_id,
                 "release_version": version,
+                "learning_policy": context.get("learning_policy") or {},
             },
         )
     except Exception as exc:

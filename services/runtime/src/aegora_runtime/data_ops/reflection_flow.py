@@ -116,7 +116,7 @@ def cluster_user_messages(
 def cluster_user_messages_by_rule(messages: list[dict[str, Any]], negative_trace_ids: set[str]) -> list[dict[str, Any]]:
     buckets: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     for row in messages:
-        if row.get("role") != "user" or not row.get("content"):
+        if row.get("role") != "user" or not row.get("content") or not evidence_capture_allowed(row):
             continue
         buckets[(message_agent_id(row), cluster_key(str(row["content"])))].append(row)
     return build_clusters(buckets.values(), negative_trace_ids)
@@ -127,7 +127,11 @@ def cluster_user_messages_by_embedding(
     negative_trace_ids: set[str],
     settings: Settings,
 ) -> list[dict[str, Any]]:
-    rows = [row for row in messages if row.get("role") == "user" and row.get("content")]
+    rows = [
+        row
+        for row in messages
+        if row.get("role") == "user" and row.get("content") and evidence_capture_allowed(row)
+    ]
     if not rows:
         return []
     threshold = float(os.environ.get("DATA_OPS_REFLECTION_CLUSTER_THRESHOLD", "0.82"))
@@ -165,6 +169,7 @@ def build_clusters(groups, negative_trace_ids: set[str]) -> list[dict[str, Any]]
         negative_count = sum(1 for trace_id in traces if trace_id in negative_trace_ids)
         examples = [str(row.get("content") or "").strip() for row in rows[:5]]
         agent_id = message_agent_id(rows[0]) if rows else "legacy"
+        policies = [message_learning_policy(row) for row in rows]
         clusters.append(
             {
                 "agent_id": agent_id,
@@ -174,6 +179,12 @@ def build_clusters(groups, negative_trace_ids: set[str]) -> list[dict[str, Any]]
                 "negative_count": negative_count,
                 "examples": examples,
                 "source_trace_ids": traces[:20],
+                "learning_policy": {
+                    "propose_skills": bool(policies) and all(bool(policy["propose_skills"]) for policy in policies),
+                    "requires_human_review": True
+                    if not policies
+                    else any(bool(policy["requires_human_review"]) for policy in policies),
+                },
             }
         )
     return sorted(clusters, key=lambda item: (item["negative_count"], item["count"]), reverse=True)
@@ -186,6 +197,23 @@ def message_agent_id(row: dict[str, Any]) -> str:
     )
     value = metadata.get("agent_id") or request_metadata.get("agent_id")
     return str(value).strip() if value not in (None, "") else "legacy"
+
+
+def message_learning_policy(row: dict[str, Any]) -> dict[str, Any]:
+    metadata = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
+    request_metadata = metadata.get("request_metadata") if isinstance(metadata.get("request_metadata"), dict) else {}
+    raw = request_metadata.get("learning_policy")
+    if not isinstance(raw, dict):
+        return {"capture_evidence": True, "propose_skills": False, "requires_human_review": True}
+    return {
+        "capture_evidence": bool(raw.get("capture_evidence", True)),
+        "propose_skills": bool(raw.get("propose_skills", False)),
+        "requires_human_review": bool(raw.get("requires_human_review", True)),
+    }
+
+
+def evidence_capture_allowed(row: dict[str, Any]) -> bool:
+    return bool(message_learning_policy(row)["capture_evidence"])
 
 
 def cluster_key(text: str) -> str:
@@ -213,9 +241,14 @@ def build_report_item(cluster: dict[str, Any], min_negative_feedback: int) -> di
     elif any(term in text for term in HANDOFF_TERMS):
         item_type = "handoff_rule"
         suggestion = "建议人工确认是否需要明确转人工边界。"
-    elif cluster["negative_count"] >= min_negative_feedback:
+    elif cluster["negative_count"] >= min_negative_feedback and bool(
+        (cluster.get("learning_policy") or {}).get("propose_skills")
+    ):
         item_type = "skill_candidate"
         suggestion = "建议生成 Skill 草稿，沉淀客服处理策略。"
+    elif cluster["negative_count"] >= min_negative_feedback:
+        item_type = "learning_review"
+        suggestion = "达到候选阈值，但该 Agent 未授权生成 Skill 草稿，仅进入人工学习复核。"
     else:
         item_type = "faq_gap"
         suggestion = "建议人工检查是否缺少 FAQ 或现有 FAQ 表达不完整。"
@@ -228,6 +261,7 @@ def build_report_item(cluster: dict[str, Any], min_negative_feedback: int) -> di
         "suggestion": suggestion,
         "examples": cluster["examples"],
         "source_trace_ids": cluster["source_trace_ids"],
+        "learning_policy": cluster.get("learning_policy") or {},
     }
 
 

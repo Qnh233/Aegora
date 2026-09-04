@@ -112,7 +112,7 @@ Aegora 将运行经验视为 **候选改进素材**，而不是允许 Agent 在�
 - **完整血缘**：保留来源 Run/证据、评测结果、变更提案、策略/人工决策以及最终生成版本之间的关联。
 - **学习不能扩大权限**：新 Skill 或 Prompt 无法绕过已发布 Release 的能力上限，也不能绕过 Runtime 当前动态鉴权结果。
 
-当前代码已经具备该方向的基础：不可变 Release、Runtime 动态策略解析、审计/治理边界、Skill 机制、已有的 Reflection / Skill Draft 路径，以及统一 LiteLLM Gateway 与 Langfuse Trace 关联。Runtime 会把配置化 Agent 的 Agent/Release 血缘写入会话证据，Reflection 聚类禁止跨 Agent 混合，并把来源 Agent 与 trace ids 保留到 Skill 草稿元数据中。按 Agent 配置的学习策略、晋级/评测门禁与完整自动化数据飞轮仍属于后续 Roadmap。
+当前代码已经具备该方向的基础：不可变 Release、Runtime 动态策略解析、审计/治理边界、Skill 机制、已有的 Reflection / Skill Draft 路径，以及统一 LiteLLM Gateway 与 Langfuse Trace 关联。Runtime 会把配置化 Agent 的 Agent/Release 血缘和 Release 级学习策略快照写入会话证据，Reflection 聚类禁止跨 Agent 混合；每个 Agent 可关闭证据采集，Skill 草稿生成必须显式开启，否则只进入人工学习复核。来源 Agent 与 trace ids 继续保留到 Skill 草稿元数据中。晋级/评测门禁与完整自动化数据飞轮仍属于后续 Roadmap。
 
 ## 仓库结构
 

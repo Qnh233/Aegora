@@ -195,12 +195,55 @@ def test_reflection_cluster_promotes_negative_feedback_to_skill_candidate() -> N
             "negative_count": 1,
             "examples": ["会员权益怎么判断"],
             "source_trace_ids": ["t1"],
+            "learning_policy": {"propose_skills": True, "requires_human_review": True},
         },
         min_negative_feedback=1,
     )
 
     assert item["type"] == "skill_candidate"
     assert cluster_key("会员权益怎么判断？") == cluster_key("会员权益怎么判断")
+
+
+def test_reflection_learning_policy_blocks_unapproved_evidence_and_drafts() -> None:
+    rows = [
+        {
+            "role": "user",
+            "content": "允许进入学习报告",
+            "trace_id": "allowed",
+            "metadata": {
+                "agent_id": "agent-a",
+                "request_metadata": {
+                    "learning_policy": {
+                        "capture_evidence": True,
+                        "propose_skills": False,
+                        "requires_human_review": True,
+                    }
+                },
+            },
+        },
+        {
+            "role": "user",
+            "content": "禁止采集",
+            "trace_id": "blocked",
+            "metadata": {
+                "agent_id": "agent-a",
+                "request_metadata": {
+                    "learning_policy": {
+                        "capture_evidence": False,
+                        "propose_skills": True,
+                    }
+                },
+            },
+        },
+    ]
+
+    clusters = reflection_flow.cluster_user_messages_by_rule(rows, {"allowed", "blocked"})
+    assert len(clusters) == 1
+    assert clusters[0]["source_trace_ids"] == ["allowed"]
+
+    item = build_report_item(clusters[0], min_negative_feedback=1)
+    assert item["type"] == "learning_review"
+    assert item["learning_policy"]["propose_skills"] is False
 
 
 def test_data_ops_uses_global_lock(monkeypatch) -> None:
