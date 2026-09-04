@@ -260,6 +260,53 @@ def test_reflection_embedding_cluster_falls_back_to_semantic_groups(monkeypatch)
     assert clusters[0]["negative_count"] == 1
 
 
+def test_reflection_never_clusters_evidence_across_agents(monkeypatch) -> None:
+    class FakeEncoder:
+        def encode(self, texts):
+            return [[1.0, 0.0] for _ in texts]
+
+    monkeypatch.setattr(reflection_flow, "build_encoder", lambda _settings: FakeEncoder())
+    settings = load_settings(env_path=None)
+    rows = [
+        {
+            "role": "user",
+            "content": "同一个会员问题",
+            "trace_id": "a",
+            "metadata": {"agent_id": "agent-a"},
+        },
+        {
+            "role": "user",
+            "content": "同一个会员问题",
+            "trace_id": "b",
+            "metadata": {"agent_id": "agent-b"},
+        },
+    ]
+
+    clusters = reflection_flow.cluster_user_messages(rows, {"a", "b"}, settings)
+
+    assert len(clusters) == 2
+    assert {item["agent_id"] for item in clusters} == {"agent-a", "agent-b"}
+    assert all(item["count"] == 1 for item in clusters)
+
+
+def test_reflection_skill_draft_preserves_evidence_lineage() -> None:
+    settings = load_settings(env_path=None)
+    draft = fallback_skill_draft_from_item(
+        {
+            "agent_id": "agent-a",
+            "cluster_title": "会员功能咨询",
+            "examples": ["会员功能怎么用"],
+            "source_trace_ids": ["trace-1", "trace-2"],
+        },
+        settings,
+    )
+
+    assert draft["metadata"] == {
+        "source_agent_id": "agent-a",
+        "source_trace_ids": ["trace-1", "trace-2"],
+    }
+
+
 def test_skill_index_excludes_content_and_trigger_rules() -> None:
     index = skill_index_item(candidate())
 

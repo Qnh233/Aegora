@@ -112,7 +112,7 @@ Production Runs / Traces / Human Feedback
 - **Full lineage**: retain source run/evidence, evaluator result, proposal, reviewer/policy decision and resulting version for auditability.
 - **No authorization expansion through learning**: learned Skills/prompts cannot grant tools or scopes beyond the published release ceiling and current runtime authorization intersection.
 
-The current codebase already contains foundations for this design: immutable releases, runtime policy resolution, governance/audit boundaries, Skills, the existing reflection/Skill-draft path, a central LiteLLM gateway integration and Langfuse trace correlation. The end-to-end automated flywheel and Redis L2 event fabric remain **roadmap architecture until their corresponding implementation lands**.
+The current codebase already contains foundations for this design: immutable releases, runtime policy resolution, governance/audit boundaries, Skills, the existing reflection/Skill-draft path, a central LiteLLM gateway integration and Langfuse trace correlation. Runtime chat persistence now carries Agent/Release lineage into reflection evidence, and reflection clustering never mixes evidence across Agents. Per-Agent learning policies, promotion/evaluation gates and the full automated flywheel remain roadmap work.
 
 ## Repository layout
 
