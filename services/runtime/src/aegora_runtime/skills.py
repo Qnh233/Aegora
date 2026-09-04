@@ -107,6 +107,12 @@ def agent_skill_promotion_errors(skill: dict[str, Any], reviewer: str | None = N
         errors.append("agent Skill 晋级前必须记录非空 metadata.evaluation.metrics")
     if not isinstance(evaluation.get("evaluated_at"), str) or not evaluation["evaluated_at"].strip():
         errors.append("agent Skill 晋级前必须记录 metadata.evaluation.evaluated_at")
+    expected_hash = str(skill.get("content_hash") or skill_content_hash(skill)).strip()
+    actual_hash = str(evaluation.get("content_hash") or "").strip()
+    if not actual_hash:
+        errors.append("agent Skill 晋级前必须记录 metadata.evaluation.content_hash")
+    elif actual_hash != expected_hash:
+        errors.append("agent Skill 评测证据已过期：metadata.evaluation.content_hash 与当前内容不一致")
     reviewer_name = reviewer if reviewer is not None else skill.get("reviewed_by")
     if not isinstance(reviewer_name, str) or not reviewer_name.strip():
         errors.append("agent Skill 晋级前必须记录明确的人工审核者 reviewed_by")

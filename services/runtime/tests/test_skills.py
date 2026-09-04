@@ -8,6 +8,7 @@ from aegora_runtime.skills import (
     agent_skill_promotion_errors,
     build_skill_embedding_text,
     select_skills,
+    skill_content_hash,
     skill_index_item,
     validate_skill,
 )
@@ -63,18 +64,37 @@ def test_agent_skill_promotion_accepts_passed_evaluation_and_manual_skills() -> 
     evaluated = candidate(
         source="agent",
         reviewed_by="reviewer-1",
-        metadata={
-            "evaluation": {
-                "status": "passed",
-                "dataset": "eval_skills.jsonl@sha256:abc",
-                "metrics": {"accuracy": 1.0, "regressions": 0},
-                "evaluated_at": "2026-09-04T03:00:00Z",
-            }
-        },
     )
+    evaluated["metadata"] = {
+        "evaluation": {
+            "status": "passed",
+            "dataset": "eval_skills.jsonl@sha256:abc",
+            "content_hash": skill_content_hash(evaluated),
+            "metrics": {"accuracy": 1.0, "regressions": 0},
+            "evaluated_at": "2026-09-04T03:00:00Z",
+        }
+    }
 
     assert agent_skill_promotion_errors(evaluated) == []
     assert agent_skill_promotion_errors(candidate(source="manual", metadata={})) == []
+
+
+def test_agent_skill_promotion_rejects_stale_evaluation_after_content_change() -> None:
+    evaluated = candidate(source="agent", reviewed_by="reviewer-1")
+    evaluated["metadata"] = {
+        "evaluation": {
+            "status": "passed",
+            "dataset": "eval_skills.jsonl@sha256:abc",
+            "content_hash": skill_content_hash(evaluated),
+            "metrics": {"accuracy": 1.0},
+            "evaluated_at": "2026-09-04T03:00:00Z",
+        }
+    }
+    evaluated["content"] = "评测后被修改的内容"
+
+    errors = agent_skill_promotion_errors(evaluated)
+
+    assert any("评测证据已过期" in error for error in errors)
 
 
 def test_commercial_skill_requires_explicit_or_strong_related_trigger() -> None:

@@ -410,10 +410,22 @@ PYTHONPATH=src python scripts/run_perf_eval.py \
 PYTHONPATH=src python scripts/eval_skills.py
 ```
 
+对单条未发布 Agent Skill 生成可审计的晋级证据：
+
+```bash
+PYTHONPATH=src python scripts/eval_skills.py \
+  evals/eval_skills.jsonl \
+  --skill-file /path/to/candidate-skill.json \
+  --evidence-output /path/to/evaluation.json
+```
+
+`evaluation.json` 会自动写入评测集 SHA-256、候选 Skill 内容哈希、指标、门槛和 UTC 评测时间。该文件作为审核输入回填到 `metadata.evaluation`；如果 Skill 内容在评测后发生变化，晋级门禁会因内容哈希不一致而拒绝上线，必须重新评测。
+
 Agent 生成的 Skill 不允许仅靠修改生命周期状态直接上线。`source=agent` 在进入 `active` 前必须同时满足：
 
 - `metadata.evaluation.status = "passed"`
 - `metadata.evaluation.dataset` 记录评测集或其版本/哈希
+- `metadata.evaluation.content_hash` 与当前 Skill 内容哈希一致
 - `metadata.evaluation.metrics` 为非空指标对象
 - `metadata.evaluation.evaluated_at` 记录评测时间
 - `reviewed_by` 为明确人工审核者

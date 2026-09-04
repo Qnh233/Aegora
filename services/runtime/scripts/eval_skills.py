@@ -2,13 +2,15 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
+from datetime import datetime, timezone
 from pathlib import Path
 
 from aegora_runtime.config import load_settings
 from aegora_runtime.real_agent import LazyBgeM3Encoder
-from aegora_runtime.skills import build_skill_embedding_text, select_skills, skill_vector_candidates
+from aegora_runtime.skills import build_skill_embedding_text, select_skills, skill_content_hash, skill_vector_candidates
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,6 +21,9 @@ def main() -> None:
     parser.add_argument("dataset", type=Path, nargs="?", default=ROOT / "evals" / "eval_skills.jsonl")
     parser.add_argument("--output", type=Path, default=ROOT / "evals" / "latest_skill_eval.json")
     parser.add_argument("--skill-file", type=Path, help="Evaluate unpublished JSON Skills with the real BGE encoder.")
+    parser.add_argument("--evidence-output", type=Path, help="Write promotion-ready evaluation evidence for one candidate Skill.")
+    parser.add_argument("--min-injection-accuracy", type=float, default=1.0)
+    parser.add_argument("--max-misinjection-rate", type=float, default=0.0)
     args = parser.parse_args()
     settings = load_settings(validate_secrets=True)
     encoder = LazyBgeM3Encoder(settings)
@@ -86,6 +91,17 @@ def main() -> None:
         "details": details,
     }
     args.output.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    if args.evidence_output:
+        if not args.skill_file or file_skills is None or len(file_skills) != 1:
+            raise ValueError("--evidence-output 必须与仅包含一条 Skill 的 --skill-file 一起使用")
+        evidence = build_evaluation_evidence(
+            summary,
+            args.dataset,
+            file_skills[0],
+            min_injection_accuracy=args.min_injection_accuracy,
+            max_misinjection_rate=args.max_misinjection_rate,
+        )
+        args.evidence_output.write_text(json.dumps(evidence, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps({key: value for key, value in summary.items() if key != "details"}, ensure_ascii=False, indent=2))
 
 
@@ -116,6 +132,50 @@ def cosine_similarity(left: list[float], right: list[float]) -> float:
     left_norm = math.sqrt(sum(value * value for value in left))
     right_norm = math.sqrt(sum(value * value for value in right))
     return dot / (left_norm * right_norm) if left_norm and right_norm else 0.0
+
+
+def build_evaluation_evidence(
+    summary: dict,
+    dataset: Path,
+    skill: dict,
+    *,
+    min_injection_accuracy: float,
+    max_misinjection_rate: float,
+) -> dict:
+    """Bind promotion evidence to the exact candidate content and dataset bytes."""
+    dataset_hash = hashlib.sha256(dataset.read_bytes()).hexdigest()
+    metrics = {
+        key: summary[key]
+        for key in [
+            "total",
+            "correct",
+            "injection_accuracy",
+            "cross_product_misinjection_rate",
+            "inactive_skill_injection_rate",
+            "commercial_irrelevant_misinjection_rate",
+            "max_injected_per_turn",
+            "commercial_frequency_accuracy",
+            "commercial_frequency_cases",
+        ]
+    }
+    passed = (
+        metrics["injection_accuracy"] >= min_injection_accuracy
+        and metrics["cross_product_misinjection_rate"] <= max_misinjection_rate
+        and metrics["inactive_skill_injection_rate"] <= max_misinjection_rate
+        and metrics["commercial_irrelevant_misinjection_rate"] <= max_misinjection_rate
+    )
+    clean_skill = {key: value for key, value in skill.items() if key not in {"id", "status", "_vector", "retrieval_score"}}
+    return {
+        "status": "passed" if passed else "failed",
+        "dataset": f"{dataset.name}@sha256:{dataset_hash}",
+        "content_hash": skill_content_hash(clean_skill),
+        "metrics": metrics,
+        "criteria": {
+            "min_injection_accuracy": min_injection_accuracy,
+            "max_misinjection_rate": max_misinjection_rate,
+        },
+        "evaluated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+    }
 
 
 if __name__ == "__main__":
