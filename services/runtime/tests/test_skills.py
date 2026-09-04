@@ -56,6 +56,8 @@ def test_agent_skill_promotion_requires_auditable_evaluation() -> None:
     assert any("status=passed" in error for error in errors)
     assert any("evaluation.dataset" in error for error in errors)
     assert any("evaluation.metrics" in error for error in errors)
+    assert any("evaluation.criteria" in error for error in errors)
+    assert any("evaluation.regression" in error for error in errors)
     assert any("evaluation.evaluated_at" in error for error in errors)
     assert any("reviewed_by" in error for error in errors)
 
@@ -71,6 +73,8 @@ def test_agent_skill_promotion_accepts_passed_evaluation_and_manual_skills() -> 
             "dataset": "eval_skills.jsonl@sha256:abc",
             "content_hash": skill_content_hash(evaluated),
             "metrics": {"accuracy": 1.0, "regressions": 0},
+            "criteria": {"min_injection_accuracy": 1.0},
+            "regression": {"status": "passed"},
             "evaluated_at": "2026-09-04T03:00:00Z",
         }
     }
@@ -87,6 +91,8 @@ def test_agent_skill_promotion_rejects_stale_evaluation_after_content_change() -
             "dataset": "eval_skills.jsonl@sha256:abc",
             "content_hash": skill_content_hash(evaluated),
             "metrics": {"accuracy": 1.0},
+            "criteria": {"min_injection_accuracy": 1.0},
+            "regression": {"status": "passed"},
             "evaluated_at": "2026-09-04T03:00:00Z",
         }
     }

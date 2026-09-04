@@ -105,6 +105,14 @@ def agent_skill_promotion_errors(skill: dict[str, Any], reviewer: str | None = N
     metrics = evaluation.get("metrics")
     if not isinstance(metrics, dict) or not metrics:
         errors.append("agent Skill 晋级前必须记录非空 metadata.evaluation.metrics")
+    criteria = evaluation.get("criteria")
+    if not isinstance(criteria, dict) or not criteria:
+        errors.append("agent Skill 晋级前必须记录非空 metadata.evaluation.criteria")
+    regression = evaluation.get("regression")
+    if not isinstance(regression, dict):
+        errors.append("agent Skill 晋级前必须提供 metadata.evaluation.regression 对象")
+    elif regression.get("status") != "passed":
+        errors.append("agent Skill 晋级前必须通过回归对比（metadata.evaluation.regression.status=passed）")
     if not isinstance(evaluation.get("evaluated_at"), str) or not evaluation["evaluated_at"].strip():
         errors.append("agent Skill 晋级前必须记录 metadata.evaluation.evaluated_at")
     expected_hash = str(skill.get("content_hash") or skill_content_hash(skill)).strip()

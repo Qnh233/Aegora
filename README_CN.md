@@ -112,7 +112,7 @@ Aegora 将运行经验视为 **候选改进素材**，而不是允许 Agent 在�
 - **完整血缘**：保留来源 Run/证据、评测结果、变更提案、策略/人工决策以及最终生成版本之间的关联。
 - **学习不能扩大权限**：新 Skill 或 Prompt 无法绕过已发布 Release 的能力上限，也不能绕过 Runtime 当前动态鉴权结果。
 
-当前代码已经具备该方向的基础：不可变 Release、Runtime 动态策略解析、审计/治理边界、Skill 机制、已有的 Reflection / Skill Draft 路径，以及统一 LiteLLM Gateway 与 Langfuse Trace 关联。Runtime 会把配置化 Agent 的 Agent/Release 血缘和 Release 级学习策略快照写入会话证据，Reflection 聚类禁止跨 Agent 混合；每个 Agent 可关闭证据采集，Skill 草稿生成必须显式开启，否则只进入人工学习复核。来源 Agent 与 trace ids 继续保留到 Skill 草稿元数据中。现在 `source=agent` 的 Skill 在晋级前必须携带已通过的评测记录（数据集、指标、评测时间）和明确人工审核者；评测证据还会绑定候选 Skill 的内容哈希，评测后若修改 Skill，原证据会自动失效并要求重新评测。单条未发布候选 Skill 已可由评测脚本自动生成这份可审计证据；本地晋级与 Strapi→PostgreSQL 同步两条路径都会执行同一硬门禁。Canary 晋级与完整数据飞轮仍属于后续 Roadmap。
+当前代码已经具备该方向的基础：不可变 Release、Runtime 动态策略解析、审计/治理边界、Skill 机制、已有的 Reflection / Skill Draft 路径，以及统一 LiteLLM Gateway 与 Langfuse Trace 关联。Runtime 会把配置化 Agent 的 Agent/Release 血缘和 Release 级学习策略快照写入会话证据，Reflection 聚类禁止跨 Agent 混合；每个 Agent 可关闭证据采集，Skill 草稿生成必须显式开启，否则只进入人工学习复核。来源 Agent 与 trace ids 继续保留到 Skill 草稿元数据中。现在 `source=agent` 的 Skill 在晋级前必须携带已通过的评测记录（数据集、指标、评测时间）、明确的评测 criteria、与已接受基线的回归对比结果，以及明确人工审核者；评测证据还会绑定候选 Skill 的内容哈希，评测后若修改 Skill，原证据会自动失效并要求重新评测。这样候选不能只靠跨过绝对阈值上线，同时还必须证明没有相对已知良好版本产生不可接受的退化。本地晋级与 Strapi→PostgreSQL 同步两条路径都会执行同一硬门禁。Canary 晋级与完整数据飞轮仍属于后续 Roadmap。
 
 ## 仓库结构
 

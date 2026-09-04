@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from aegora_runtime.skills import skill_content_hash
-from scripts.eval_skills import build_evaluation_evidence
+from scripts.eval_skills import build_evaluation_evidence, build_regression_result
 
 
 def test_build_evaluation_evidence_binds_dataset_and_candidate(tmp_path: Path) -> None:
@@ -43,10 +43,42 @@ def test_build_evaluation_evidence_binds_dataset_and_candidate(tmp_path: Path) -
         skill,
         min_injection_accuracy=1.0,
         max_misinjection_rate=0.0,
+        baseline_evidence={
+            "status": "passed",
+            "dataset": "baseline.jsonl@sha256:old",
+            "content_hash": "old",
+            "metrics": {"injection_accuracy": 1.0},
+        },
     )
 
     expected_skill = {key: value for key, value in skill.items() if key not in {"id", "status", "_vector", "retrieval_score"}}
     assert evidence["status"] == "passed"
     assert evidence["dataset"].startswith("eval.jsonl@sha256:")
     assert evidence["content_hash"] == skill_content_hash(expected_skill)
-    assert evidence["criteria"] == {"min_injection_accuracy": 1.0, "max_misinjection_rate": 0.0}
+    assert evidence["criteria"] == {
+        "min_injection_accuracy": 1.0,
+        "max_misinjection_rate": 0.0,
+        "max_accuracy_regression": 0.0,
+    }
+    assert evidence["regression"]["status"] == "passed"
+
+
+def test_regression_result_rejects_accuracy_drop() -> None:
+    result = build_regression_result(
+        {"injection_accuracy": 0.95},
+        {"status": "passed", "metrics": {"injection_accuracy": 1.0}, "dataset": "baseline", "content_hash": "abc"},
+        max_accuracy_regression=0.01,
+    )
+
+    assert result["status"] == "failed"
+    assert result["accuracy_delta"] == -0.05
+
+
+def test_regression_result_rejects_unaccepted_baseline() -> None:
+    result = build_regression_result(
+        {"injection_accuracy": 1.0},
+        {"status": "failed", "metrics": {"injection_accuracy": 1.0}, "dataset": "baseline", "content_hash": "abc"},
+        max_accuracy_regression=0.0,
+    )
+
+    assert result == {"status": "failed", "reason": "baseline_not_accepted"}

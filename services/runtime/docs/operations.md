@@ -416,10 +416,11 @@ PYTHONPATH=src python scripts/eval_skills.py
 PYTHONPATH=src python scripts/eval_skills.py \
   evals/eval_skills.jsonl \
   --skill-file /path/to/candidate-skill.json \
+  --baseline-evidence /path/to/accepted-evaluation.json \
   --evidence-output /path/to/evaluation.json
 ```
 
-`evaluation.json` 会自动写入评测集 SHA-256、候选 Skill 内容哈希、指标、门槛和 UTC 评测时间。该文件作为审核输入回填到 `metadata.evaluation`；如果 Skill 内容在评测后发生变化，晋级门禁会因内容哈希不一致而拒绝上线，必须重新评测。
+`evaluation.json` 会自动写入评测集 SHA-256、候选 Skill 内容哈希、指标、门槛、UTC 评测时间，以及相对上一份已接受评测证据的回归结果。`--evidence-output` 必须同时提供 `--baseline-evidence`，避免没有已知良好基线的候选被误当成 promotion-ready artifact。默认不允许 injection accuracy 相对基线下降，可用 `--max-accuracy-regression` 显式调整容忍度。该文件作为审核输入回填到 `metadata.evaluation`；如果 Skill 内容在评测后发生变化，晋级门禁会因内容哈希不一致而拒绝上线，必须重新评测。
 
 Agent 生成的 Skill 不允许仅靠修改生命周期状态直接上线。`source=agent` 在进入 `active` 前必须同时满足：
 
@@ -427,6 +428,8 @@ Agent 生成的 Skill 不允许仅靠修改生命周期状态直接上线。`sou
 - `metadata.evaluation.dataset` 记录评测集或其版本/哈希
 - `metadata.evaluation.content_hash` 与当前 Skill 内容哈希一致
 - `metadata.evaluation.metrics` 为非空指标对象
+- `metadata.evaluation.criteria` 为非空门禁条件
+- `metadata.evaluation.regression.status = "passed"`
 - `metadata.evaluation.evaluated_at` 记录评测时间
 - `reviewed_by` 为明确人工审核者
 
