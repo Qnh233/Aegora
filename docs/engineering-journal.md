@@ -1,5 +1,16 @@
 # Aegora Engineering Journal
 
+## 2026-09-05 — Workflow Scope Schema governance editing
+
+- **Objective / roadmap item:** close the remaining first-phase Workflow governance gap by letting administrators define scoped allow-lists instead of registering every Workflow with an empty scope policy.
+- **Key design decision:** keep Workflow execution transport unchanged (still MCP-backed) and add Scope editing only at the Control Plane UX boundary. The Runtime continues enforcing the existing Release/user/tool permission intersection, so UI editing cannot expand runtime authority by itself.
+- **Tradeoff:** this slice uses explicit JSON editors rather than a bespoke visual schema builder. It is intentionally smaller, keeps the stored contract unchanged (`dict[str, list[str]]` + descriptions), and avoids introducing a second schema representation that would later need migration.
+- **Pitfall/root cause:** the phase-1 backend already accepted `scope_schema` and `scope_descriptions`, but the frontend always submitted `{}` for both, making the capability effectively uneditable from the product UI.
+- **Highlight/reusable pattern:** when a backend governance contract already exists, prefer exposing that exact contract through the Control Plane before inventing another abstraction; validate structural invariants at the UX boundary but keep the Runtime as the final authorization gate.
+- **Important files:** `apps/control-plane/frontend/src/App.tsx`, `README.md`, `README_CN.md`.
+- **Verification:** `npm ci && npm run build` passed with Vite 8.0.16 (3018 modules transformed). npm reported two pre-existing high-severity dependency advisories and Vite warned that the main JS chunk is >500 kB; neither blocked this schema-editing slice, but both are follow-up maintenance signals rather than reasons to hide the successful build.
+- **Next step:** add Workflow version/lifecycle management without weakening immutable Release and runtime authorization boundaries.
+
 ## 2026-09-05 — Roadmap integration and CI boundary realignment
 
 - **Objective:** consolidate the completed Workflow, Redis, LiteLLM-hardening and governed-learning roadmap branches without treating stale CI failures as product-code failures.
