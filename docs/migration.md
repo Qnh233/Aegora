@@ -21,5 +21,5 @@
 - 建立跨服务合同包；
 - 建立仓库级验证脚本。
 
-LiteLLM Proxy 与 Langfuse 的基础接入已在迁移后的统一 Runtime/Deploy 边界内落地。Workflow Capability 第一阶段采用“工作流语义 + MCP 执行适配器”的方式接入：控制面注册受治理 Workflow Capability，Runtime 继续复用成熟的 MCP 调用路径，避免为工作流另造一套协议。后续再逐步实现 Workflow 生命周期、Learning Flywheel、Redis L1/L2，以及模型网关/Trace 的生产级硬化，避免多个高风险能力同时大改造成不可验证状态。
+LiteLLM Proxy 与 Langfuse 的基础接入已在迁移后的统一 Runtime/Deploy 边界内落地。Workflow Capability 第一阶段已经合入 `main`，采用“工作流语义 + MCP 执行适配器”的方式接入：控制面注册受治理 Workflow Capability，Runtime 继续复用成熟的 MCP 调用路径，避免为工作流另造一套协议。Redis 缓存阶段只缓存不可变 Release 静态配置，并刻意把 Release 状态、RBAC、工具与 MCP 当前治理事实留在 PostgreSQL 实时读取路径，避免缓存扩大权限或延迟撤销；当前集成分支已纳入有界进程内 L1 + 版本化 Redis L2、v1 版本化事件契约、控制面 best-effort 发布器、Runtime 订阅失效路径、Runtime 事件计数/消费延迟/订阅重连失败 Prometheus 指标，以及控制面发布成功/失败/禁用计数的管理员运维视图。后续再逐步实现 Workflow 生命周期、确有必要时的 MCP Session 收敛、Learning Flywheel，以及模型网关/Trace 的生产级硬化，避免多个高风险能力同时大改造成不可验证状态。
 

@@ -4,6 +4,7 @@ import os
 from contextlib import contextmanager
 from typing import Any, Iterator
 
+from aegora_runtime.runtime_cache import get_runtime_config_cache
 from aegora_runtime.tool_adapters import local_mcp_stdio_runner_tool_id
 
 
@@ -279,15 +280,24 @@ def fetch_agent_release(agent_id: str, release_id: str) -> dict[str, object] | N
                        agent_id::text AS agent_id,
                        version,
                        status,
-                       to_jsonb(agent_releases)->>'visibility' AS visibility,
-                       config_json
+                       to_jsonb(agent_releases)->>'visibility' AS visibility
                 FROM agent_releases
                 WHERE agent_id = %s AND id = %s
                 """,
                 (agent_id, release_id),
             )
             row = cur.fetchone()
-            return dict(row) if row else None
+            if not row:
+                return None
+            release = dict(row)
+            config_json = _release_config_json(
+                cur,
+                release,
+                agent_id=agent_id,
+                release_id=release_id,
+            )
+            release["config_json"] = config_json
+            return release
 
 
 def fetch_agent_release_by_version(agent_id: str, version: int) -> dict[str, object] | None:
@@ -299,8 +309,7 @@ def fetch_agent_release_by_version(agent_id: str, version: int) -> dict[str, obj
                        agent_id::text AS agent_id,
                        version,
                        status,
-                       to_jsonb(agent_releases)->>'visibility' AS visibility,
-                       config_json
+                       to_jsonb(agent_releases)->>'visibility' AS visibility
                 FROM agent_releases
                 WHERE agent_id = %s AND version = %s
                 ORDER BY published_at DESC NULLS LAST, id DESC
@@ -309,7 +318,47 @@ def fetch_agent_release_by_version(agent_id: str, version: int) -> dict[str, obj
                 (agent_id, version),
             )
             row = cur.fetchone()
-            return dict(row) if row else None
+            if not row:
+                return None
+            release = dict(row)
+            release_id = str(release["release_id"])
+            release["config_json"] = _release_config_json(
+                cur,
+                release,
+                agent_id=agent_id,
+                release_id=release_id,
+            )
+            return release
+
+
+def _release_config_json(
+    cur: Any,
+    release: dict[str, object],
+    *,
+    agent_id: str,
+    release_id: str,
+) -> dict[str, object]:
+    version = int(release["version"])
+    cache = get_runtime_config_cache()
+    cached = cache.get(agent_id=agent_id, release_id=release_id, version=version)
+    if cached is not None:
+        return cached
+
+    cur.execute(
+        "SELECT config_json FROM agent_releases WHERE agent_id = %s AND id = %s",
+        (agent_id, release_id),
+    )
+    config_row = cur.fetchone()
+    if not config_row or not isinstance(config_row.get("config_json"), dict):
+        raise RuntimeContextError("release config_json 不合法")
+    config_json = dict(config_row["config_json"])
+    cache.set(
+        config_json,
+        agent_id=agent_id,
+        release_id=release_id,
+        version=version,
+    )
+    return config_json
 
 
 def build_runtime_context(

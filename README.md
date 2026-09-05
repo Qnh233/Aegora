@@ -53,7 +53,7 @@ The runtime is stateless with respect to durable business/configuration truth, b
 
 - **PostgreSQL — source of truth**: Agent drafts/releases, RBAC, capability state, MCP registrations, learning policies, audit records and other durable control-plane facts.
 - **Redis — shared L2 and event fabric (target)**: versioned runtime-context cache, invalidation/version events and other rebuildable shared state. Redis must never become the canonical configuration database.
-- **Runtime L1 — process-local hot cache**: resolved release/runtime contexts and bounded hot data. Versioned keys allow stale entries to stop matching after publish or policy changes.
+- **Runtime L1 — process-local hot cache**: bounded immutable Release config entries sit in front of Redis L2. Versioned keys prevent cross-release reuse; entries are disposable and never contain mutable authorization facts.
 - **MCP pool — process-local reusable connections**: runtime pods may reuse MCP sessions/connections, while pool state remains disposable and rebuildable after restart.
 - **LiteLLM Proxy — central model gateway**: Runtime and Control Plane use stable `aegora-chat` / `aegora-fast` aliases through an OpenAI-compatible gateway; provider credentials and concrete model names remain behind LiteLLM. Staging deployment wiring is included under `deploy/`.
 - **Langfuse — Agent/LLM observability**: optional Runtime root spans reuse Aegora trace/session/user context, while LiteLLM exports model generations through Langfuse OTEL so Agent execution and token/latency/cost data can be correlated.
@@ -112,7 +112,7 @@ Production Runs / Traces / Human Feedback
 - **Full lineage**: retain source run/evidence, evaluator result, proposal, reviewer/policy decision and resulting version for auditability.
 - **No authorization expansion through learning**: learned Skills/prompts cannot grant tools or scopes beyond the published release ceiling and current runtime authorization intersection.
 
-The current codebase already contains foundations for this design: immutable releases, runtime policy resolution, governance/audit boundaries, Skills, the existing reflection/Skill-draft path, a central LiteLLM gateway integration and Langfuse trace correlation. The end-to-end automated flywheel and Redis L2 event fabric remain **roadmap architecture until their corresponding implementation lands**.
+The current codebase already contains foundations for this design: immutable releases, runtime policy resolution, governance/audit boundaries, Skills, the existing reflection/Skill-draft path, a central LiteLLM gateway integration and Langfuse trace correlation. The Redis roadmap branch now also contains bounded Runtime L1 + versioned Redis L2 plus a v1 publish/revoke/tool-policy event contract with a best-effort Control Plane publisher and Runtime subscriber. The end-to-end automated flywheel remains roadmap work until its implementation lands.
 
 ## Repository layout
 
@@ -190,6 +190,6 @@ Planned next steps:
 
 1. Workflow Capability phase 1 is implemented on the roadmap branch: administrators can register governed workflow capabilities backed by an existing MCP connection, and Runtime reuses the MCP execution adapter while preserving `source=workflow`. Next, add workflow version/lifecycle management and richer scope-schema editing.
 2. Harden the LiteLLM/Langfuse production path: pin tested image digests, add multi-provider fallback policies, budgets and trace/evaluation dashboards.
-3. Add Redis-backed L2 configuration caching plus version/event-driven invalidation, keeping runtime L1 caches disposable.
+3. Redis cache phase 1/2 plus the first event-fabric slice is implemented on the roadmap branch: Runtime caches only immutable Release `config_json` with bounded process-local L1 + versioned Redis L2; Control Plane emits versioned publish/revoke/tool-policy events and Runtime consumes them, evicting exact release-version cache entries when relevant. Runtime Prometheus metrics expose applied/ignored/invalid event counts, event lag, and subscriber reconnect failures; the Control Plane now also keeps low-cardinality publisher success/failure/disabled counters and exposes them through an admin-only operational endpoint. Release status, RBAC, tool state and MCP connection state remain live PostgreSQL reads. Next, add tool-session convergence only where a real stale-session risk is demonstrated.
 4. Generalize the existing reflection/Skill-draft path into per-Agent learning policies, evaluation gates and the governed data flywheel described above.
 
