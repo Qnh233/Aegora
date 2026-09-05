@@ -395,6 +395,7 @@ def build_runtime_context(
         if isinstance(config_json.get("permission_snapshot"), dict)
         else {}
     )
+    learning_policy = normalize_learning_policy(config_json.get("learning_policy"))
     authz_result = apply_runtime_tool_authz(
         active_tool_configs,
         actor_id=actor_id,
@@ -430,6 +431,7 @@ def build_runtime_context(
         "tool_ids": sorted(tool_scopes),
         "tool_scopes": tool_scopes,
         "permission_snapshot": permission_snapshot,
+        "learning_policy": learning_policy,
         "policy": {
             "source": "agent_release",
             "disabled_tools_filtered": sorted(released_tool_ids - active_ids),
@@ -437,6 +439,16 @@ def build_runtime_context(
             "mcp_connection_filtered_tools": connection_filtered,
             **authz_result["policy"],
         },
+    }
+
+
+def normalize_learning_policy(raw: object) -> dict[str, object]:
+    """Release-scoped learning policy; draft creation is explicit opt-in."""
+    policy = raw if isinstance(raw, dict) else {}
+    return {
+        "capture_evidence": bool(policy.get("capture_evidence", True)),
+        "propose_skills": bool(policy.get("propose_skills", False)),
+        "requires_human_review": bool(policy.get("requires_human_review", True)),
     }
 
 

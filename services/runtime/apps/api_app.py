@@ -575,6 +575,14 @@ def run_configured_request(
         approval_store=default_approval_store,
     )
     answer = result.get("answer") or "未生成回答"
+    release = context.get("release") if isinstance(context.get("release"), dict) else {}
+    persist_metadata = {
+        **metadata,
+        "agent_id": agent_id,
+        "release_id": release_id,
+        "release_version": release.get("version"),
+        "learning_policy": context.get("learning_policy") or {},
+    }
     try:
         save_chat_turn(
             SETTINGS,
@@ -584,7 +592,7 @@ def run_configured_request(
             assistant_message=answer,
             result=result,
             source=source,
-            request_metadata=metadata,
+            request_metadata=persist_metadata,
         )
     except Exception as exc:
         log_event(
@@ -641,7 +649,13 @@ def run_configured_webhook_request(
             assistant_message=answer,
             result=result,
             source="webhook",
-            request_metadata={**metadata, "release_id": release_id, "version": version},
+            request_metadata={
+                **metadata,
+                "agent_id": agent_id,
+                "release_id": release_id,
+                "release_version": version,
+                "learning_policy": context.get("learning_policy") or {},
+            },
         )
     except Exception as exc:
         log_event(

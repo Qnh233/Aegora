@@ -75,9 +75,33 @@ def test_build_runtime_context_filters_disabled_tools(monkeypatch) -> None:
     assert context["tool_ids"] == ["calculator"]
     assert context["tool_scopes"] == {"calculator": {"actions": ["calculate"]}}
     assert context["policy"]["disabled_tools_filtered"] == ["time_now"]
+    assert context["learning_policy"] == {
+        "capture_evidence": True,
+        "propose_skills": False,
+        "requires_human_review": True,
+    }
     assert str(context["tools"][0]["runner_tool_id"]).startswith("mcp+stdio://")
     assert context["tools"][0]["runner_name"] == "calculator"
     assert context["tools"][0]["source"] == "mcp"
+
+
+def test_build_runtime_context_carries_release_learning_policy(monkeypatch) -> None:
+    release = release_fixture()
+    release["config_json"]["learning_policy"] = {
+        "capture_evidence": False,
+        "propose_skills": True,
+        "requires_human_review": False,
+    }
+    monkeypatch.setattr(runtime_context, "active_tool_ids", lambda _: {"calculator"})
+    monkeypatch.setattr(runtime_context, "get_user_role_tool_scopes", lambda _: {"calculator": {"actions": ["calculate"]}})
+
+    context = runtime_context.build_runtime_context(release, actor_id="u_1", channel="web_console")
+
+    assert context["learning_policy"] == {
+        "capture_evidence": False,
+        "propose_skills": True,
+        "requires_human_review": False,
+    }
 
 
 def test_build_runtime_context_filters_tools_by_runtime_role_permissions(monkeypatch) -> None:

@@ -57,6 +57,7 @@ def save_chat_turn(
     session_id = normalize_session_id(session_id)
     user_id = session_user_id(session_id, user_id)
     current_trace_id = trace_id(result, session_id)
+    lineage = learning_lineage(request_metadata)
     client = client_from_settings(settings)
     sessions_endpoint = collection_endpoint(settings, "chat_sessions")
     messages_endpoint = collection_endpoint(settings, "chat_messages")
@@ -69,7 +70,7 @@ def save_chat_turn(
             "user_id": user_id,
             "title": user_message.strip()[:80] or "未命名会话",
             "source": source,
-            "metadata": request_metadata or {},
+            "metadata": {**lineage, "request_metadata": request_metadata or {}},
         },
     )
     client.upsert(
@@ -84,7 +85,7 @@ def save_chat_turn(
             "role": "user",
             "content": user_message,
             "source": source,
-            "metadata": {"request_metadata": request_metadata or {}},
+            "metadata": {**lineage, "request_metadata": request_metadata or {}},
         },
     )
     assistant_key = f"{current_trace_id}:assistant"
@@ -115,11 +116,28 @@ def save_chat_turn(
                 "injected_skill_ids": [item.get("id") for item in result.get("skills") or []],
                 "model_usage": result.get("model_usage") or {},
                 "instance_id": settings.observability.instance_id,
+                **lineage,
                 "request_metadata": request_metadata or {},
             },
         },
     )
     return assistant_key
+
+
+def learning_lineage(request_metadata: dict[str, Any] | None) -> dict[str, Any]:
+    """Keep only stable run identity fields needed by the governed learning loop."""
+    metadata = request_metadata or {}
+    result: dict[str, Any] = {}
+    for source_key, target_key in (
+        ("agent_id", "agent_id"),
+        ("release_id", "release_id"),
+        ("release_version", "release_version"),
+        ("version", "release_version"),
+    ):
+        value = metadata.get(source_key)
+        if value not in (None, "") and target_key not in result:
+            result[target_key] = value
+    return result
 
 
 def load_recent_conversation(
