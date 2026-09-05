@@ -2417,7 +2417,9 @@ export default function App() {
         requires_approval: false,
         side_effect_level: "internal_write",
         timeout_ms: 30000,
-        input_schema_text: '{\n  "type": "object",\n  "properties": {}\n}'
+        input_schema_text: '{\n  "type": "object",\n  "properties": {}\n}',
+        scope_schema_text: '{\n  "department": ["finance"]\n}',
+        scope_descriptions_text: '{\n  "department": "允许调用该 Workflow 的部门范围"\n}'
       });
       setWorkflowEditorOpen(true);
     }
@@ -2425,10 +2427,22 @@ export default function App() {
     async function saveWorkflowCapability() {
       const values = await workflowForm.validateFields();
       let inputSchema: Record<string, unknown> = {};
+      let scopeSchema: Record<string, string[]> = {};
+      let scopeDescriptions: Record<string, string> = {};
       try {
         inputSchema = JSON.parse(values.input_schema_text || "{}") as Record<string, unknown>;
+        scopeSchema = JSON.parse(values.scope_schema_text || "{}") as Record<string, string[]>;
+        scopeDescriptions = JSON.parse(values.scope_descriptions_text || "{}") as Record<string, string>;
+        const invalidScope = Object.entries(scopeSchema).find(
+          ([key, allowed]) => !key.trim() || !Array.isArray(allowed) || allowed.some((value) => typeof value !== "string")
+        );
+        if (invalidScope) throw new Error("invalid scope schema");
+        const invalidDescription = Object.entries(scopeDescriptions).find(
+          ([key, description]) => !key.trim() || typeof description !== "string"
+        );
+        if (invalidDescription) throw new Error("invalid scope descriptions");
       } catch {
-        toast.error("Input Schema 必须是合法 JSON");
+        toast.error("Input/Scope Schema 必须是合法 JSON；Scope Schema 的值必须是字符串数组");
         return;
       }
       setLoading(true);
@@ -2449,8 +2463,8 @@ export default function App() {
               data_sensitivity: "internal",
               timeout_ms: values.timeout_ms || 30000,
               input_schema: inputSchema,
-              scope_schema: {},
-              scope_descriptions: {}
+              scope_schema: scopeSchema,
+              scope_descriptions: scopeDescriptions
             })
           },
           authToken
@@ -2818,6 +2832,20 @@ export default function App() {
             </Form.Item>
             <Form.Item name="input_schema_text" label="Input Schema (JSON)" rules={[{ required: true }]}>
               <Input.TextArea rows={7} />
+            </Form.Item>
+            <Form.Item
+              name="scope_schema_text"
+              label="Scope Schema (JSON)"
+              tooltip='按维度声明 allow-list，例如 {"department":["finance"]}；Runtime 会与 Release/用户权限继续取交集。'
+            >
+              <Input.TextArea rows={5} />
+            </Form.Item>
+            <Form.Item
+              name="scope_descriptions_text"
+              label="Scope 描述 (JSON)"
+              tooltip='可选：为每个 Scope 维度补充管理员可读说明。'
+            >
+              <Input.TextArea rows={4} />
             </Form.Item>
           </Form>
         </Modal>
