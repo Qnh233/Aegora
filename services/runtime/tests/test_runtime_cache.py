@@ -92,3 +92,47 @@ def test_release_config_cache_delete_clears_l1_and_l2() -> None:
     cache.delete(agent_id="a1", release_id="r1", version=2)
 
     assert cache.get(agent_id="a1", release_id="r1", version=2) is None
+
+
+def test_release_artifact_cache_is_namespaced_versioned_and_returns_copies() -> None:
+    redis = FakeRedis()
+    cache = RedisReleaseConfigCache(
+        RuntimeCacheSettings(enabled=True, redis_url="redis://unused", key_prefix="test:aegora"),
+        client=redis,
+    )
+    artifact = {"system_messages": [{"role": "system", "content": "stable"}]}
+
+    cache.set_artifact(
+        artifact,
+        artifact_type="configured-prompt",
+        artifact_version="v1-deadbeef",
+        agent_id="a1",
+        release_id="r1",
+        version=2,
+    )
+
+    expected_key = "test:aegora:artifact:configured-prompt:v1-deadbeef:agent:a1:release:r1:version:2"
+    assert expected_key in redis.values
+    cached = cache.get_artifact(
+        artifact_type="configured-prompt",
+        artifact_version="v1-deadbeef",
+        agent_id="a1",
+        release_id="r1",
+        version=2,
+    )
+    assert cached == artifact
+    cached["system_messages"][0]["content"] = "mutated"
+    assert cache.get_artifact(
+        artifact_type="configured-prompt",
+        artifact_version="v1-deadbeef",
+        agent_id="a1",
+        release_id="r1",
+        version=2,
+    ) == artifact
+    assert cache.get_artifact(
+        artifact_type="configured-prompt",
+        artifact_version="v2-new-builder",
+        agent_id="a1",
+        release_id="r1",
+        version=2,
+    ) is None
