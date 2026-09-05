@@ -153,7 +153,7 @@ class ToolRequest(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     description: str = Field(default="", max_length=500)
     status: str = Field(default="active", pattern="^(active|disabled)$")
-    source: str = Field(default="http", pattern="^(mcp|http|workflow_agent|local)$")
+    source: str = Field(default="http", pattern="^(mcp|http|workflow|workflow_agent|local)$")
     runner_tool_id: str | None = Field(default=None, max_length=200)
     runner_name: str | None = Field(default=None, max_length=100)
     mcp_connection_id: str | None = Field(default=None, max_length=100)
@@ -194,7 +194,7 @@ class ToolDefinition(BaseModel):
     name: str
     description: str
     status: str = "active"
-    source: str = Field(default="local", pattern="^(mcp|http|workflow_agent|local)$")
+    source: str = Field(default="local", pattern="^(mcp|http|workflow|workflow_agent|local)$")
     runner_tool_id: str | None = None
     runner_name: str | None = None
     mcp_connection_id: str | None = None
@@ -217,6 +217,27 @@ class ToolDefinition(BaseModel):
     scope_schema: dict[str, list[str]] = Field(default_factory=dict)
     scope_descriptions: dict[str, str] = Field(default_factory=dict)
     manifest_hash: str = ""
+
+
+class WorkflowCapabilityRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    description: str = Field(default="", max_length=500)
+    status: str = Field(default="active", pattern="^(active|disabled)$")
+    mcp_connection_id: str = Field(min_length=1, max_length=100)
+    runner_name: str = Field(min_length=1, max_length=100)
+    version: str = Field(default="dev", max_length=100)
+    requires_approval: bool = False
+    side_effect_level: str = Field(
+        default="internal_write",
+        pattern="^(none|external_read|internal_write|external_write|destructive)$",
+    )
+    data_sensitivity: str = Field(
+        default="internal", pattern="^(public|internal|confidential|secret)$"
+    )
+    timeout_ms: int = Field(default=30_000, ge=100, le=300_000)
+    input_schema: dict[str, Any] = Field(default_factory=dict)
+    scope_schema: dict[str, list[str]] = Field(default_factory=dict)
+    scope_descriptions: dict[str, str] = Field(default_factory=dict)
 
 
 class AgentToolConfig(BaseModel):

@@ -32,7 +32,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r apps/control-plane/backend/requirements.txt -r services/runtime/requirements.txt
 
-      - name: Run backend and runtime tests
+      - name: Run control-plane tests
+        working-directory: apps/control-plane/backend
+        env:
+          DATABASE_URL: postgresql://aegora:aegora@127.0.0.1:5432/aegora_test
+          AUTH_MODE: local
+        run: pytest -q
+
+      - name: Run runtime tests
+        working-directory: services/runtime
+        env:
+          PYTHONPATH: src
+          LLM_GATEWAY_API_KEY: test-key
         run: pytest -q
 
   frontend-build:

@@ -275,7 +275,7 @@ def ensure_schema() -> None:
                 """
                 UPDATE tools
                 SET source = 'http'
-                WHERE source NOT IN ('mcp', 'http', 'workflow_agent', 'local')
+                WHERE source NOT IN ('mcp', 'http', 'workflow', 'workflow_agent', 'local')
                 """
             )
             cursor.execute("ALTER TABLE tools ADD COLUMN IF NOT EXISTS runner_tool_id TEXT")
