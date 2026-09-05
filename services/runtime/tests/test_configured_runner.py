@@ -191,6 +191,66 @@ def test_build_configured_messages_includes_classified_short_term_context() -> N
     assert payload["session_user_context"][0]["message_key"] == "m1"
 
 
+def test_build_configured_messages_reuses_release_prompt_artifact_without_caching_dynamic_context(monkeypatch) -> None:
+    class FakeArtifactCache:
+        def __init__(self) -> None:
+            self.value = None
+            self.get_calls = []
+            self.set_calls = []
+
+        def get_artifact(self, **kwargs):
+            self.get_calls.append(dict(kwargs))
+            return self.value
+
+        def set_artifact(self, artifact, **kwargs):
+            self.set_calls.append(dict(kwargs))
+            self.value = artifact
+
+    cache = FakeArtifactCache()
+    monkeypatch.setattr("aegora_runtime.configured_runner.get_runtime_config_cache", lambda: cache)
+    runtime_context = runtime_context_fixture()
+
+    first = build_configured_messages(
+        {
+            "request": type("Req", (), {"query": "第一次问题"})(),
+            "context": {"history": [{"role": "user", "content": "旧历史"}]},
+            "tool_catalog": [{"name": "calculator", "description": "执行算术"}],
+            "tool_observations": [],
+        },
+        runtime_context,
+    )
+
+    second_context = runtime_context_fixture()
+    second_context["actor"] = {"actor_id": "u_2"}
+    second_context["channel"] = "im"
+    second = build_configured_messages(
+        {
+            "request": type("Req", (), {"query": "第二次问题"})(),
+            "context": {"history": [{"role": "assistant", "content": "新历史"}]},
+            "tool_catalog": [{"name": "runtime.load_skill", "description": "加载 Skill"}],
+            "tool_observations": [{"tool_name": "calculator", "status": "ok", "output": 2}],
+        },
+        second_context,
+    )
+
+    assert len(cache.get_calls) == 2
+    assert len(cache.set_calls) == 1
+    assert cache.get_calls[0]["agent_id"] == "agent_1"
+    assert cache.get_calls[0]["release_id"] == "rel_1"
+    assert cache.get_calls[0]["version"] == 1
+    assert first[:2] == second[:2]
+
+    first_payload = json.loads(first[-1].content)
+    second_payload = json.loads(second[-1].content)
+    assert first_payload["message"] == "第一次问题"
+    assert second_payload["message"] == "第二次问题"
+    assert second_payload["runtime"]["actor"]["actor_id"] == "u_2"
+    assert second_payload["runtime"]["channel"] == "im"
+    assert second_payload["available_tools"][0]["name"] == "runtime.load_skill"
+    assert second_payload["history"][0]["content"] == "新历史"
+    assert second_payload["tool_observations"][0]["output"] == 2
+
+
 def test_run_configured_turn_preserves_scope_skill_index_for_planner(monkeypatch) -> None:
     index = [{"name": "membership_rights", "title": "会员权益", "summary": "会员权益说明"}]
     client = FakeClient([{"route": "answer", "answer": "可以查看会员权益经验。"}])

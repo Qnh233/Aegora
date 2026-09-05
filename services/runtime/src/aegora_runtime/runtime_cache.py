@@ -37,10 +37,12 @@ def runtime_cache_settings() -> RuntimeCacheSettings:
 
 
 class RedisReleaseConfigCache:
-    """Fail-open L2 cache for immutable release config only.
+    """Fail-open L1/L2 cache for immutable release config and derived artifacts.
 
     Mutable governance facts (release status, actor permissions, tool state and
-    MCP connection state) are deliberately excluded from this cache.
+    MCP connection state) are deliberately excluded from this cache. Derived
+    artifacts must be deterministic functions of immutable release data plus an
+    explicit artifact version so code changes cannot reuse stale serialized data.
     """
 
     def __init__(self, settings: RuntimeCacheSettings, client: Any | None = None) -> None:
@@ -94,6 +96,68 @@ class RedisReleaseConfigCache:
         except Exception:
             return
 
+    def get_artifact(
+        self,
+        *,
+        artifact_type: str,
+        artifact_version: str,
+        agent_id: str,
+        release_id: str,
+        version: int,
+    ) -> dict[str, object] | None:
+        if not self.enabled:
+            return None
+        key = self._artifact_key(
+            artifact_type,
+            artifact_version,
+            agent_id,
+            release_id,
+            version,
+        )
+        cached = self._l1_get(key)
+        if cached is not None:
+            return cached
+        try:
+            payload = self._redis().get(key)
+            if not payload:
+                return None
+            value = json.loads(payload)
+            if not isinstance(value, dict):
+                return None
+            self._l1_set(key, value)
+            return deepcopy(value)
+        except Exception:
+            return None
+
+    def set_artifact(
+        self,
+        artifact: dict[str, object],
+        *,
+        artifact_type: str,
+        artifact_version: str,
+        agent_id: str,
+        release_id: str,
+        version: int,
+    ) -> None:
+        if not self.enabled:
+            return
+        key = self._artifact_key(
+            artifact_type,
+            artifact_version,
+            agent_id,
+            release_id,
+            version,
+        )
+        self._l1_set(key, artifact)
+        try:
+            self._redis().set(
+                key,
+                json.dumps(artifact, ensure_ascii=False, separators=(",", ":")),
+                ex=self.settings.ttl_seconds,
+            )
+        except Exception:
+            return
+
     def delete(self, *, agent_id: str, release_id: str, version: int) -> None:
         if not self.enabled:
             return
@@ -137,6 +201,19 @@ class RedisReleaseConfigCache:
 
     def _key(self, agent_id: str, release_id: str, version: int) -> str:
         return f"{self.settings.key_prefix}:agent:{agent_id}:release:{release_id}:version:{version}"
+
+    def _artifact_key(
+        self,
+        artifact_type: str,
+        artifact_version: str,
+        agent_id: str,
+        release_id: str,
+        version: int,
+    ) -> str:
+        return (
+            f"{self.settings.key_prefix}:artifact:{artifact_type}:{artifact_version}"
+            f":agent:{agent_id}:release:{release_id}:version:{version}"
+        )
 
 
 _CACHE: RedisReleaseConfigCache | None = None

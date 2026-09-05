@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from typing import Any
 
@@ -15,6 +16,7 @@ from aegora_runtime.config import Settings, load_settings
 from aegora_runtime.deepseek import ChatMessage, DeepSeekClient, DeepSeekError
 from aegora_runtime.local_aicoin_tools import build_aicoin_tool_runtime, write_tool_log
 from aegora_runtime.real_agent import LazyBgeM3Encoder, search_faq_tool
+from aegora_runtime.runtime_cache import get_runtime_config_cache
 from aegora_runtime.runtime_approvals import (
     APPROVAL_APPROVED,
     APPROVAL_EXECUTED,
@@ -39,6 +41,7 @@ CONFIGURED_PROTOCOL = """你是配置驱动 Runner Core。只输出 JSON 对象�
 3. 工具结果是事实边界；没有工具或证据时不要编造外部事实。
 4. route=tool_call 时输出 tool_name/tool_args，或 tool_calls 数组；其他终态必须输出非空 answer。
 5. 工具未列出、参数不确定或权限不足时，不要尝试绕过，直接回答无法执行或澄清。"""
+CONFIGURED_PROMPT_ARTIFACT_VERSION = "v1-" + hashlib.sha256(CONFIGURED_PROTOCOL.encode("utf-8")).hexdigest()[:16]
 
 
 class ApprovalGate:
@@ -373,10 +376,64 @@ def configured_planner_think(state: dict[str, Any], client: DeepSeekClient, sett
     return parse_configured_decision(data, allowed_tools)
 
 
+def configured_prompt_artifact(runtime_context: dict[str, object]) -> dict[str, object]:
+    release = runtime_context.get("release") if isinstance(runtime_context.get("release"), dict) else {}
+    agent = runtime_context.get("agent") if isinstance(runtime_context.get("agent"), dict) else {}
+    system_prompt = str(agent.get("system_prompt") or "你是一个内部助手。").strip()
+    agent_id = str(release.get("agent_id") or agent.get("id") or "")
+    release_id = str(release.get("release_id") or "")
+    try:
+        release_version = int(release.get("version") or 0)
+    except (TypeError, ValueError):
+        release_version = 0
+
+    cache = get_runtime_config_cache()
+    if agent_id and release_id and release_version > 0:
+        cached = cache.get_artifact(
+            artifact_type="configured-prompt",
+            artifact_version=CONFIGURED_PROMPT_ARTIFACT_VERSION,
+            agent_id=agent_id,
+            release_id=release_id,
+            version=release_version,
+        )
+        if isinstance(cached, dict) and isinstance(cached.get("system_messages"), list):
+            return cached
+
+    artifact: dict[str, object] = {
+        "system_messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "system", "content": CONFIGURED_PROTOCOL},
+        ],
+        "runtime_static": {
+            "release": {
+                "release_id": release.get("release_id"),
+                "agent_id": release.get("agent_id"),
+                "version": release.get("version"),
+            },
+            "agent": {
+                "id": agent.get("id"),
+                "name": agent.get("name"),
+                "model": agent.get("model"),
+            },
+        },
+    }
+    if agent_id and release_id and release_version > 0:
+        cache.set_artifact(
+            artifact,
+            artifact_type="configured-prompt",
+            artifact_version=CONFIGURED_PROMPT_ARTIFACT_VERSION,
+            agent_id=agent_id,
+            release_id=release_id,
+            version=release_version,
+        )
+    return artifact
+
+
 def build_configured_messages(state: dict[str, Any], runtime_context: dict[str, object]) -> list[ChatMessage]:
     request = state["request"]
     agent = runtime_context.get("agent") if isinstance(runtime_context.get("agent"), dict) else {}
-    system_prompt = str(agent.get("system_prompt") or "你是一个内部助手。").strip()
+    artifact = configured_prompt_artifact(runtime_context)
+    runtime_static = artifact.get("runtime_static") if isinstance(artifact.get("runtime_static"), dict) else {}
     payload = {
         "message": request.query,
         "history": (state.get("context") or {}).get("history") or [],
@@ -386,8 +443,8 @@ def build_configured_messages(state: dict[str, Any], runtime_context: dict[str, 
         "available_tools": state.get("tool_catalog") or [],
         "skill_index": (state.get("context") or {}).get("skill_index") or [],
         "runtime": {
-            "release": runtime_context.get("release") or {},
-            "agent": {
+            "release": runtime_static.get("release") or runtime_context.get("release") or {},
+            "agent": runtime_static.get("agent") or {
                 "id": agent.get("id"),
                 "name": agent.get("name"),
                 "model": agent.get("model"),
@@ -396,11 +453,18 @@ def build_configured_messages(state: dict[str, Any], runtime_context: dict[str, 
             "actor": runtime_context.get("actor") or {},
         },
     }
-    return [
-        ChatMessage("system", system_prompt),
-        ChatMessage("system", CONFIGURED_PROTOCOL),
-        ChatMessage("user", json.dumps(payload, ensure_ascii=False)),
+    system_messages = artifact.get("system_messages") if isinstance(artifact.get("system_messages"), list) else []
+    prefix = [
+        ChatMessage(str(item.get("role") or "system"), str(item.get("content") or ""))
+        for item in system_messages
+        if isinstance(item, dict)
     ]
+    if not prefix:
+        prefix = [
+            ChatMessage("system", str(agent.get("system_prompt") or "你是一个内部助手。").strip()),
+            ChatMessage("system", CONFIGURED_PROTOCOL),
+        ]
+    return [*prefix, ChatMessage("user", json.dumps(payload, ensure_ascii=False))]
 
 
 def parse_configured_decision(data: dict[str, Any], allowed_tools: set[str]) -> AgentDecision:
