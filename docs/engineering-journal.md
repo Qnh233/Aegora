@@ -1,5 +1,16 @@
 # Aegora Engineering Journal
 
+## 2026-09-05 — Roadmap integration and CI boundary realignment
+
+- **Objective:** consolidate the completed Workflow, Redis, LiteLLM-hardening and governed-learning roadmap branches without treating stale CI failures as product-code failures.
+- **Key design decision:** pytest now follows deployable-service boundaries: Control Plane and Runtime execute in separate pytest processes/working directories. `--import-mode=importlib` remains only a secondary import-safety measure, not a substitute for process isolation.
+- **Pitfall/root cause:** the old root-level pytest process collected duplicate module names from multiple services and polluted Python's import cache, producing misleading `import file mismatch` errors. Once that false failure was removed, Runtime testing exposed a real hot-path issue: best-effort tool logging could block indefinitely while opening PostgreSQL before its exception handler had a chance to run.
+- **Fix:** keep tool-log persistence explicitly disableable (`TOOL_LOG_DB_ENABLED=false` in CI) and bound all Runtime PostgreSQL connection establishment with `PG_CONNECT_TIMEOUT_SECONDS` (default 3s). This preserves production audit capability while keeping non-critical logging from becoming an unbounded dependency.
+- **Highlight/reusable pattern:** CI boundaries should mirror independently deployable services; non-critical observability sinks need both failure isolation and bounded I/O, because `try/except` alone does not protect latency from a blocking connect.
+- **Additional pitfall:** the full Runtime suite then exposed a Windows-only test cleanup leak: Aegora and PocoFlow both held `FileHandler`s for the same temporary log file when `TemporaryDirectory` exited. Linux would allow unlinking that open file and hide the lifecycle bug, so the test now explicitly closes/removes both handlers inside the temporary-directory scope.
+- **Verification:** Control Plane suite passed 92/92; focused Runtime config/DB/configured-runner tests passed 9/9; Runtime logging tests passed 6/6; the full Runtime suite passed 222 tests with 4 intentional skips. The DevSpace Windows host does not expose `npm` on PATH, so the frontend build remains delegated to the GitHub-hosted CI runner for the integration PR.
+- **Next step:** publish the integration candidate, require green service-isolated CI, then merge it to `main` and retire the superseded roadmap PRs.
+
 ## 2026-09-04 — CI collection hardening for monorepo tests
 
 - **Objective / roadmap item**: finish the pending Workflow Capability iteration by fixing its failing Python CI check instead of starting a conflicting roadmap branch.

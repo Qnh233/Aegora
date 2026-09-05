@@ -35,6 +35,7 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(settings.embedding.dimension, 1024)
         self.assertEqual(settings.embedding.storage_model, "siliconflow:BAAI/bge-m3")
         self.assertEqual(settings.postgres.port, 5432)
+        self.assertEqual(settings.postgres.connect_timeout_seconds, 3)
         self.assertEqual(settings.retrieval.top_k, 5)
         self.assertEqual(settings.retrieval.fusion_method, "rrf")
         self.assertEqual(settings.retrieval.rrf_k, 60)
@@ -61,6 +62,7 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(settings.observability.pocoflow_db_path.name, "pocoflow.db")
         self.assertTrue(settings.observability.pocoflow_db_enabled)
         self.assertTrue(settings.observability.file_log_enabled)
+        self.assertTrue(settings.observability.tool_log_db_enabled)
         self.assertEqual(settings.observability.instance_id, "local")
         self.assertFalse(settings.observability.langfuse_tracing_enabled)
         self.assertIsNone(settings.deepseek.api_key)
@@ -82,11 +84,13 @@ class ConfigTest(unittest.TestCase):
             "PG_HOST": "db.internal",
             "PG_PORT": "6543",
             "PG_PASSWORD": "secret",
+            "PG_CONNECT_TIMEOUT_SECONDS": "7",
             "AGENT_LOOP_MODE": "planner",
             "AGENT_ENABLE_LLM_SELF_CHECK": "true",
             "AGENT_MAX_PARALLEL_TOOL_CALLS": "2",
             "POCOFLOW_DB_ENABLED": "false",
             "FILE_LOG_ENABLED": "false",
+            "TOOL_LOG_DB_ENABLED": "false",
             "INSTANCE_ID": "pod-2",
             "LANGFUSE_TRACING_ENABLED": "true",
             "LLM_GATEWAY_TRACE_METADATA_ENABLED": "false",
@@ -110,11 +114,13 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(settings.postgres.host, "db.internal")
         self.assertEqual(settings.postgres.port, 6543)
         self.assertIn("secret", settings.postgres.dsn)
+        self.assertEqual(settings.postgres.connect_timeout_seconds, 7)
         self.assertEqual(settings.agent.loop_mode, "planner")
         self.assertTrue(settings.agent.enable_llm_self_check)
         self.assertEqual(settings.agent.max_parallel_tool_calls, 2)
         self.assertFalse(settings.observability.pocoflow_db_enabled)
         self.assertFalse(settings.observability.file_log_enabled)
+        self.assertFalse(settings.observability.tool_log_db_enabled)
         self.assertEqual(settings.observability.instance_id, "pod-2")
         self.assertTrue(settings.observability.langfuse_tracing_enabled)
         self.assertFalse(settings.deepseek.trace_metadata_enabled)

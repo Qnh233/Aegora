@@ -25,6 +25,15 @@ class LoggingTest(unittest.TestCase):
     def test_setup_logging_returns_log_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = setup_logging(load_settings(env_path=None), log_dir=tmp)
+            # Windows cannot remove an open FileHandler target. Close the
+            # handler while the temporary directory still exists so the test
+            # exercises the same explicit lifecycle required by a real
+            # process shutdown/reconfiguration.
+            for logger in (self.logger, logging.getLogger("pocoflow")):
+                for handler in list(logger.handlers):
+                    if isinstance(handler, logging.FileHandler):
+                        logger.removeHandler(handler)
+                        handler.close()
 
         self.assertIsInstance(path, Path)
         self.assertIn("aegora_runtime", path.name)

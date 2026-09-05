@@ -76,6 +76,7 @@ class PostgresSettings:
     user: str
     password: str | None
     sslmode: str
+    connect_timeout_seconds: int
     pool_min_size: int
     pool_max_size: int
 
@@ -177,6 +178,7 @@ class ObservabilitySettings:
     log_dir: Path
     pocoflow_db_enabled: bool
     file_log_enabled: bool
+    tool_log_db_enabled: bool
     instance_id: str
     langfuse_tracing_enabled: bool
 
@@ -355,6 +357,10 @@ def _load_postgres(raw: dict[str, Any]) -> PostgresSettings:
         user=_env(raw["user_env_var"], raw["default_user"]),
         password=_env_optional(raw["password_env_var"]),
         sslmode=_env(raw["sslmode_env_var"], raw["default_sslmode"]),
+        connect_timeout_seconds=_env_int(
+            raw["connect_timeout_seconds_env_var"],
+            raw["default_connect_timeout_seconds"],
+        ),
         pool_min_size=_env_int(raw["pool_min_size_env_var"], raw["default_pool_min_size"]),
         pool_max_size=_env_int(raw["pool_max_size_env_var"], raw["default_pool_max_size"]),
     )
@@ -467,6 +473,10 @@ def _load_observability(raw: dict[str, Any]) -> ObservabilitySettings:
             raw["file_log_enabled_env_var"],
             raw["default_file_log_enabled"],
         ),
+        tool_log_db_enabled=_env_bool(
+            raw["tool_log_db_enabled_env_var"],
+            raw["default_tool_log_db_enabled"],
+        ),
         instance_id=_env(raw["instance_id_env_var"], raw["default_instance_id"]),
         langfuse_tracing_enabled=_env_bool(
             raw["langfuse_tracing_enabled_env_var"],
@@ -494,6 +504,8 @@ def _validate_numeric_ranges(settings: Settings) -> None:
         raise ConfigError("skills 相似度阈值必须满足 0 <= min_score <= commercial_min_score <= 1")
     if settings.postgres.pool_min_size < 0:
         raise ConfigError("postgres.pool_min_size 不能小于 0")
+    if settings.postgres.connect_timeout_seconds <= 0:
+        raise ConfigError("postgres.connect_timeout_seconds 必须大于 0")
     if settings.postgres.pool_max_size < settings.postgres.pool_min_size:
         raise ConfigError("postgres.pool_max_size 必须大于等于 pool_min_size")
     if settings.agent.max_iterations <= 0:

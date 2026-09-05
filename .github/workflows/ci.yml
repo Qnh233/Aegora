@@ -44,6 +44,8 @@ jobs:
         env:
           PYTHONPATH: src
           LLM_GATEWAY_API_KEY: test-key
+          # Unit tests must not depend on a live Runtime PostgreSQL audit sink.
+          TOOL_LOG_DB_ENABLED: "false"
         run: pytest -q
 
   frontend-build:

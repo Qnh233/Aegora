@@ -26,8 +26,9 @@ def build_aicoin_tool_executor(
     search_faq_handler: SearchFaqHandler | None = None,
 ) -> RuntimeToolExecutor:
     hooks = ToolLifecycleHooks()
-    hooks.after_call.append(lambda event: write_tool_log(settings, event))
-    hooks.on_error.append(lambda event: write_tool_log(settings, event))
+    if settings.observability.tool_log_db_enabled:
+        hooks.after_call.append(lambda event: write_tool_log(settings, event))
+        hooks.on_error.append(lambda event: write_tool_log(settings, event))
     executor = RuntimeToolExecutor(hooks)
     runtime = build_aicoin_tool_runtime(settings, search_faq_handler)
     for tool_id in AICOIN_LOCAL_TOOL_IDS:
