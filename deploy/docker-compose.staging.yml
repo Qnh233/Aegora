@@ -1,6 +1,16 @@
 services:
+  redis:
+    image: ${REDIS_IMAGE:-redis:7-alpine}
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "no", "--save", ""]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   litellm:
-    image: ${LITELLM_IMAGE:-docker.litellm.ai/berriai/litellm:main-latest}
+    image: ${LITELLM_IMAGE:?set LITELLM_IMAGE to an immutable @sha256 digest reference}
     restart: unless-stopped
     env_file:
       - .env
@@ -32,12 +42,17 @@ services:
       LLM_API_KEY: ${LITELLM_MASTER_KEY}
       LLM_BASE_URL: http://litellm:4000/v1
       LLM_MODEL: aegora-chat
+      RUNTIME_CONFIG_EVENTS_ENABLED: "true"
+      RUNTIME_CONFIG_INVALIDATION_CHANNEL: aegora:runtime-config:events:v1
+      RUNTIME_CONFIG_REDIS_URL: redis://redis:6379/0
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
       runtime:
         condition: service_healthy
       litellm:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   runtime:
@@ -52,6 +67,11 @@ services:
       LLM_GATEWAY_FAST_MODEL: aegora-fast
       LLM_GATEWAY_TRACE_METADATA_ENABLED: "true"
       LANGFUSE_RELEASE: ${AEGORA_IMAGE_TAG:-local}
+      RUNTIME_CONFIG_CACHE_ENABLED: "true"
+      RUNTIME_CONFIG_EVENTS_ENABLED: "true"
+      RUNTIME_CONFIG_INVALIDATION_CHANNEL: aegora:runtime-config:events:v1
+      RUNTIME_CONFIG_REDIS_URL: redis://redis:6379/0
+      RUNTIME_CONFIG_L1_MAX_ENTRIES: ${RUNTIME_CONFIG_L1_MAX_ENTRIES:-256}
     ports:
       - "127.0.0.1:5000:5000"
     healthcheck:
@@ -66,6 +86,8 @@ services:
       start_period: 20s
     depends_on:
       litellm:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   frontend:

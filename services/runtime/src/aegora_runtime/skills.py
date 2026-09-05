@@ -85,6 +85,69 @@ def validate_skill(skill: dict[str, Any], max_content_chars: int) -> list[str]:
     return errors
 
 
+def agent_skill_promotion_errors(skill: dict[str, Any], reviewer: str | None = None) -> list[str]:
+    """Agent 生成的 Skill 只有带可审计评测证据时才允许晋级。"""
+    if skill.get("source", "manual") != "agent":
+        return []
+
+    metadata = skill.get("metadata") or {}
+    if not isinstance(metadata, dict):
+        return ["agent Skill metadata 必须是对象"]
+    evaluation = metadata.get("evaluation") or {}
+    if not isinstance(evaluation, dict):
+        return ["agent Skill 晋级前必须提供 metadata.evaluation 对象"]
+
+    errors = []
+    if evaluation.get("status") != "passed":
+        errors.append("agent Skill 晋级前必须通过评测（metadata.evaluation.status=passed）")
+    if not isinstance(evaluation.get("dataset"), str) or not evaluation["dataset"].strip():
+        errors.append("agent Skill 晋级前必须记录评测数据集 metadata.evaluation.dataset")
+    metrics = evaluation.get("metrics")
+    if not isinstance(metrics, dict) or not metrics:
+        errors.append("agent Skill 晋级前必须记录非空 metadata.evaluation.metrics")
+    criteria = evaluation.get("criteria")
+    if not isinstance(criteria, dict) or not criteria:
+        errors.append("agent Skill 晋级前必须记录非空 metadata.evaluation.criteria")
+    regression = evaluation.get("regression")
+    if not isinstance(regression, dict):
+        errors.append("agent Skill 晋级前必须提供 metadata.evaluation.regression 对象")
+    elif regression.get("status") != "passed":
+        errors.append("agent Skill 晋级前必须通过回归对比（metadata.evaluation.regression.status=passed）")
+    canary = evaluation.get("canary")
+    if not isinstance(canary, dict):
+        errors.append("agent Skill 晋级前必须提供 metadata.evaluation.canary 对象")
+    else:
+        if canary.get("status") != "passed":
+            errors.append("agent Skill 晋级前必须通过 Canary（metadata.evaluation.canary.status=passed）")
+        if canary.get("mode") not in {"shadow", "limited"}:
+            errors.append("agent Skill Canary mode 必须是 shadow 或 limited")
+        sample_size = canary.get("sample_size")
+        if not isinstance(sample_size, int) or sample_size <= 0:
+            errors.append("agent Skill Canary 必须记录正整数 sample_size")
+        canary_metrics = canary.get("metrics")
+        if not isinstance(canary_metrics, dict) or not canary_metrics:
+            errors.append("agent Skill Canary 必须记录非空 metrics")
+        if not isinstance(canary.get("observed_at"), str) or not canary["observed_at"].strip():
+            errors.append("agent Skill Canary 必须记录 observed_at")
+        canary_hash = str(canary.get("content_hash") or "").strip()
+        if not canary_hash:
+            errors.append("agent Skill Canary 必须记录 content_hash")
+        elif canary_hash != str(evaluation.get("content_hash") or "").strip():
+            errors.append("agent Skill Canary 证据已过期：content_hash 与评测候选不一致")
+    if not isinstance(evaluation.get("evaluated_at"), str) or not evaluation["evaluated_at"].strip():
+        errors.append("agent Skill 晋级前必须记录 metadata.evaluation.evaluated_at")
+    expected_hash = str(skill.get("content_hash") or skill_content_hash(skill)).strip()
+    actual_hash = str(evaluation.get("content_hash") or "").strip()
+    if not actual_hash:
+        errors.append("agent Skill 晋级前必须记录 metadata.evaluation.content_hash")
+    elif actual_hash != expected_hash:
+        errors.append("agent Skill 评测证据已过期：metadata.evaluation.content_hash 与当前内容不一致")
+    reviewer_name = reviewer if reviewer is not None else skill.get("reviewed_by")
+    if not isinstance(reviewer_name, str) or not reviewer_name.strip():
+        errors.append("agent Skill 晋级前必须记录明确的人工审核者 reviewed_by")
+    return errors
+
+
 def retrieve_skills(
     query_vector: Sequence[float],
     *,

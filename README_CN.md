@@ -52,8 +52,8 @@ Aegora 是一个面向企业场景的 AI Agent 平台，用于注册、治理、
 Runtime 在持久业务事实和配置事实层面保持无状态，但允许保存 **可丢弃、可重建的加速状态**：
 
 - **PostgreSQL — 唯一事实源**：保存 Agent 草稿/不可变 Release、RBAC、能力状态、MCP 注册信息、学习策略、审计记录等持久控制面数据。
-- **Redis — 共享 L2 与事件层（目标能力）**：承载带版本号的 Runtime Context 缓存、失效/版本事件等可重建共享状态。Redis 不承担权威配置数据库职责。
-- **Runtime L1 — 进程内热点缓存**：缓存解析后的 Release/Runtime Context 等热点数据，使用版本化 Key 让发布或策略变化后的旧缓存自然失配。
+- **Redis — 共享 L2 与事件层**：承载带版本号的 Runtime Context 缓存、失效/版本事件等可重建共享状态。当前 Roadmap 分支已落地 Release 发布/撤销与工具策略变更事件的 v1 契约、控制面 best-effort Publisher 和 Runtime Subscriber。Redis 不承担权威配置数据库职责。
+- **Runtime L1 — 进程内热点缓存**：在 Redis L2 前缓存有界的不可变 Release 静态配置；使用版本化 Key 隔离不同 Release，且绝不缓存可变鉴权事实。
 - **MCP Pool — 进程内连接复用**：每个 Runtime Pod 可复用 MCP Session/Connection，但池状态可随时丢弃并在重启后重建。
 - **LiteLLM Proxy — 统一模型网关**：Runtime 与 Control Plane 统一通过 OpenAI-compatible 接口使用稳定的 `aegora-chat` / `aegora-fast` 别名，真实 Provider Key 与具体模型名收敛在 LiteLLM 后方；`deploy/` 已包含 Staging 部署接线。
 - **Langfuse — Agent/LLM 可观测性**：Runtime 可选创建携带 Aegora trace/session/user 上下文的根 Span，LiteLLM 再通过 Langfuse OTEL 上报模型 Generation，使 Agent 执行与 token、延迟、成本等模型数据能够关联。
@@ -112,7 +112,7 @@ Aegora 将运行经验视为 **候选改进素材**，而不是允许 Agent 在�
 - **完整血缘**：保留来源 Run/证据、评测结果、变更提案、策略/人工决策以及最终生成版本之间的关联。
 - **学习不能扩大权限**：新 Skill 或 Prompt 无法绕过已发布 Release 的能力上限，也不能绕过 Runtime 当前动态鉴权结果。
 
-当前代码已经具备该方向的基础：不可变 Release、Runtime 动态策略解析、审计/治理边界、Skill 机制、已有的 Reflection / Skill Draft 路径，以及统一 LiteLLM Gateway 与 Langfuse Trace 关联。完整自动化数据飞轮和 Redis L2 事件层在对应实现落地前仍属于 **目标架构 / Roadmap**。
+当前代码已经具备该方向的核心基础：不可变 Release、Runtime 动态策略解析、审计/治理边界、Skill 机制、Reflection / Skill Draft 路径，以及统一 LiteLLM Gateway 与 Langfuse Trace 关联。Redis 集成候选已经加入有界 Runtime L1、版本化 Redis L2，以及发布/撤销/工具策略事件的首个闭环，同时把可变权限与治理事实继续留在 PostgreSQL 实时读取路径。受治理学习集成会把 Agent/Release 血缘和 Release 级学习策略快照写入会话证据，Reflection 禁止跨 Agent 聚类；每个 Agent 可关闭证据采集，Skill 草稿生成必须显式开启。`source=agent` Skill 晋级前必须携带绑定当前候选内容哈希的离线评测证据、明确 criteria、通过的基线回归对比、绑定同一内容的 Canary 记录，以及明确人工审核者；Canary 还必须声明 `shadow`/`limited` 模式、正样本量、指标与观测时间。候选内容变化会让旧评测/Canary 证据失效，本地晋级与 Strapi→PostgreSQL 同步都会执行同一硬门禁。如何从真实受控流量自动生成 Canary 证据以及完整自动化数据飞轮仍属于后续 Roadmap。
 
 ## 仓库结构
 
@@ -159,5 +159,5 @@ PYTHONPATH=src uvicorn apps.api_app:app --host 127.0.0.1 --port 5000
 
 1. Workflow Capability 第一阶段已在 Roadmap 分支落地：管理员可以基于已有 MCP Connection 注册受治理工作流能力，Runtime 复用 MCP 执行适配器并保留 `source=workflow` 语义。下一步补充工作流版本/生命周期管理与更完整的 Scope Schema 编辑。
 2. 继续硬化 LiteLLM / Langfuse 生产链路：锁定验证过的镜像 Digest，增加多 Provider Fallback、预算策略与 Trace/Eval 看板。
-3. 引入 Redis L2 配置缓存、版本化 Key 与事件驱动失效机制，同时保持 Runtime L1 可丢弃。
-4. 将已有 Reflection / Skill Draft 路径扩展为按 Agent 配置的学习策略、评测门禁与受治理数据飞轮。
+3. Redis 缓存第一/二阶段与事件层第一阶段已在 Roadmap 分支落地：Runtime 仅缓存不可变 Release `config_json`，链路为有界进程内 L1 + 版本化 Redis L2；Control Plane 发布版本化的发布/撤销/工具策略事件，Runtime 订阅并对相关 Release 精确失效。Runtime Prometheus 已补充 applied/ignored/invalid 事件计数、事件消费延迟和订阅重连失败指标；Control Plane 也增加了低基数的发布成功/失败/禁用计数，并通过管理员运维接口暴露当前 Publisher 状态。Release 状态、RBAC、工具状态与 MCP Connection 状态仍实时读取 PostgreSQL。下一步仅在确认存在真实 stale MCP Session 风险时再增加定向 Session 收敛动作。
+4. 受治理学习第一阶段已进入本次集成候选：已加入 Agent/Release 血缘、Release 级学习策略快照、Skill 提案显式 opt-in、绑定候选内容的离线评测证据、回归对比、Canary 证据要求与人工审核晋级门禁。下一步从真实受控的 shadow/limited 流量自动生成 Canary 证据，并闭合剩余自动化数据飞轮。

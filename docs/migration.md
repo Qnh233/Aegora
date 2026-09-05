@@ -21,5 +21,5 @@
 - 建立跨服务合同包；
 - 建立仓库级验证脚本。
 
-LiteLLM Proxy 与 Langfuse 的基础接入已在迁移后的统一 Runtime/Deploy 边界内落地。Workflow Capability 第一阶段采用“工作流语义 + MCP 执行适配器”的方式接入：控制面注册受治理 Workflow Capability，Runtime 继续复用成熟的 MCP 调用路径，避免为工作流另造一套协议。后续再逐步实现 Workflow 生命周期、Learning Flywheel、Redis L1/L2，以及模型网关/Trace 的生产级硬化，避免多个高风险能力同时大改造成不可验证状态。
+LiteLLM Proxy 与 Langfuse 的基础接入已在迁移后的统一 Runtime/Deploy 边界内落地，Staging 进一步要求显式验证过的不可变 LiteLLM 镜像 Digest。Workflow Capability 第一阶段已经合入 `main`，采用“工作流语义 + MCP 执行适配器”的方式接入。当前集成候选同时纳入 Redis 与 Governed Learning 两条已完成 Roadmap 分支：Redis 仅缓存不可变 Release 静态配置，采用有界进程内 L1 + 版本化 Redis L2，并通过 v1 事件契约、Control Plane best-effort Publisher 与 Runtime Subscriber 做发布/撤销/工具策略精确失效；Release 状态、RBAC、工具与 MCP 当前治理事实仍实时读取 PostgreSQL。Learning Flywheel 已补齐 Agent/Release 证据血缘、Release 级 per-Agent learning policy，以及 Agent Skill 的晋级硬门禁：反思禁止跨 Agent 聚类，证据采集可关闭，Skill 提案显式 opt-in；`source=agent` Skill 若缺少绑定候选内容的通过评测、显式 criteria、通过的基线回归、绑定同一候选内容的 Canary 证据或人工审核者，则无论本地 publish 还是 Strapi 同步都不能进入 `active`。后续重点是 Workflow 生命周期、真实受控流量 Canary 证据采集、确有必要时的 MCP Session 收敛，以及 LiteLLM/Langfuse 的多 Provider、预算与评测看板硬化。
 

@@ -410,6 +410,35 @@ PYTHONPATH=src python scripts/run_perf_eval.py \
 PYTHONPATH=src python scripts/eval_skills.py
 ```
 
+对单条未发布 Agent Skill 生成可审计的晋级证据：
+
+```bash
+PYTHONPATH=src python scripts/eval_skills.py \
+  evals/eval_skills.jsonl \
+  --skill-file /path/to/candidate-skill.json \
+  --baseline-evidence /path/to/accepted-evaluation.json \
+  --evidence-output /path/to/evaluation.json
+```
+
+`evaluation.json` 会自动写入评测集 SHA-256、候选 Skill 内容哈希、指标、门槛、UTC 评测时间，以及相对上一份已接受评测证据的回归结果。`--evidence-output` 必须同时提供 `--baseline-evidence`，避免没有已知良好基线的候选被误当成 promotion-ready artifact。默认不允许 injection accuracy 相对基线下降，可用 `--max-accuracy-regression` 显式调整容忍度。该文件作为审核输入回填到 `metadata.evaluation`；如果 Skill 内容在评测后发生变化，晋级门禁会因内容哈希不一致而拒绝上线，必须重新评测。
+
+Agent 生成的 Skill 不允许仅靠修改生命周期状态直接上线。`source=agent` 在进入 `active` 前必须同时满足：
+
+- `metadata.evaluation.status = "passed"`
+- `metadata.evaluation.dataset` 记录评测集或其版本/哈希
+- `metadata.evaluation.content_hash` 与当前 Skill 内容哈希一致
+- `metadata.evaluation.metrics` 为非空指标对象
+- `metadata.evaluation.criteria` 为非空门禁条件
+- `metadata.evaluation.regression.status = "passed"`
+- `metadata.evaluation.canary.status = "passed"`
+- `metadata.evaluation.canary.mode` 为 `shadow` 或 `limited`
+- `metadata.evaluation.canary.sample_size` 为正整数，且 `metrics` 非空、`observed_at` 非空
+- `metadata.evaluation.canary.content_hash` 与离线评测的 `content_hash` 一致
+- `metadata.evaluation.evaluated_at` 记录评测时间
+- `reviewed_by` 为明确人工审核者
+
+该门禁同时作用于本地 `scripts/skills.py publish` 与 Strapi 内容同步，避免 CMS 路径绕过 Runtime 治理。当前只定义并校验 Canary 晋级证据合同；真实 `shadow`/`limited` 流量的采集器仍需作为独立受控发布能力实现，不能用手工伪造的零样本结果绕过。
+
 ## 常用排障
 
 | 问题 | 检查 |

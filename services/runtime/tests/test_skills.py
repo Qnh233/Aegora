@@ -5,8 +5,10 @@ from pathlib import Path
 
 from aegora_runtime.config import load_settings
 from aegora_runtime.skills import (
+    agent_skill_promotion_errors,
     build_skill_embedding_text,
     select_skills,
+    skill_content_hash,
     skill_index_item,
     validate_skill,
 )
@@ -45,6 +47,107 @@ def test_validate_skill_rejects_domain_without_product() -> None:
 
 def test_validate_skill_rejects_long_content() -> None:
     assert any("不能超过" in error for error in validate_skill(candidate(content="x" * 1001), 1000))
+
+
+def test_agent_skill_promotion_requires_auditable_evaluation() -> None:
+    row = candidate(source="agent", metadata={})
+    errors = agent_skill_promotion_errors(row)
+
+    assert any("status=passed" in error for error in errors)
+    assert any("evaluation.dataset" in error for error in errors)
+    assert any("evaluation.metrics" in error for error in errors)
+    assert any("evaluation.criteria" in error for error in errors)
+    assert any("evaluation.regression" in error for error in errors)
+    assert any("evaluation.canary" in error for error in errors)
+    assert any("evaluation.evaluated_at" in error for error in errors)
+    assert any("reviewed_by" in error for error in errors)
+
+
+def test_agent_skill_promotion_accepts_passed_evaluation_and_manual_skills() -> None:
+    evaluated = candidate(
+        source="agent",
+        reviewed_by="reviewer-1",
+    )
+    evaluated["metadata"] = {
+        "evaluation": {
+            "status": "passed",
+            "dataset": "eval_skills.jsonl@sha256:abc",
+            "content_hash": skill_content_hash(evaluated),
+            "metrics": {"accuracy": 1.0, "regressions": 0},
+            "criteria": {"min_injection_accuracy": 1.0},
+            "regression": {"status": "passed"},
+            "canary": {
+                "status": "passed",
+                "mode": "shadow",
+                "sample_size": 50,
+                "metrics": {"misinjection_rate": 0.0},
+                "observed_at": "2026-09-04T04:00:00Z",
+                "content_hash": skill_content_hash(evaluated),
+            },
+            "evaluated_at": "2026-09-04T03:00:00Z",
+        }
+    }
+
+    assert agent_skill_promotion_errors(evaluated) == []
+    assert agent_skill_promotion_errors(candidate(source="manual", metadata={})) == []
+
+
+def test_agent_skill_promotion_rejects_stale_evaluation_after_content_change() -> None:
+    evaluated = candidate(source="agent", reviewed_by="reviewer-1")
+    evaluated["metadata"] = {
+        "evaluation": {
+            "status": "passed",
+            "dataset": "eval_skills.jsonl@sha256:abc",
+            "content_hash": skill_content_hash(evaluated),
+            "metrics": {"accuracy": 1.0},
+            "criteria": {"min_injection_accuracy": 1.0},
+            "regression": {"status": "passed"},
+            "canary": {
+                "status": "passed",
+                "mode": "limited",
+                "sample_size": 10,
+                "metrics": {"misinjection_rate": 0.0},
+                "observed_at": "2026-09-04T04:00:00Z",
+                "content_hash": skill_content_hash(evaluated),
+            },
+            "evaluated_at": "2026-09-04T03:00:00Z",
+        }
+    }
+    evaluated["content"] = "评测后被修改的内容"
+
+    errors = agent_skill_promotion_errors(evaluated)
+
+    assert any("评测证据已过期" in error for error in errors)
+
+
+def test_agent_skill_promotion_rejects_invalid_canary_evidence() -> None:
+    evaluated = candidate(source="agent", reviewed_by="reviewer-1")
+    evaluated["metadata"] = {
+        "evaluation": {
+            "status": "passed",
+            "dataset": "eval_skills.jsonl@sha256:abc",
+            "content_hash": skill_content_hash(evaluated),
+            "metrics": {"accuracy": 1.0},
+            "criteria": {"min_injection_accuracy": 1.0},
+            "regression": {"status": "passed"},
+            "canary": {
+                "status": "passed",
+                "mode": "limited",
+                "sample_size": 0,
+                "metrics": {},
+                "observed_at": "",
+                "content_hash": "stale",
+            },
+            "evaluated_at": "2026-09-04T03:00:00Z",
+        }
+    }
+
+    errors = agent_skill_promotion_errors(evaluated)
+
+    assert any("sample_size" in error for error in errors)
+    assert any("Canary 必须记录非空 metrics" in error for error in errors)
+    assert any("observed_at" in error for error in errors)
+    assert any("Canary 证据已过期" in error for error in errors)
 
 
 def test_commercial_skill_requires_explicit_or_strong_related_trigger() -> None:
@@ -195,12 +298,55 @@ def test_reflection_cluster_promotes_negative_feedback_to_skill_candidate() -> N
             "negative_count": 1,
             "examples": ["会员权益怎么判断"],
             "source_trace_ids": ["t1"],
+            "learning_policy": {"propose_skills": True, "requires_human_review": True},
         },
         min_negative_feedback=1,
     )
 
     assert item["type"] == "skill_candidate"
     assert cluster_key("会员权益怎么判断？") == cluster_key("会员权益怎么判断")
+
+
+def test_reflection_learning_policy_blocks_unapproved_evidence_and_drafts() -> None:
+    rows = [
+        {
+            "role": "user",
+            "content": "允许进入学习报告",
+            "trace_id": "allowed",
+            "metadata": {
+                "agent_id": "agent-a",
+                "request_metadata": {
+                    "learning_policy": {
+                        "capture_evidence": True,
+                        "propose_skills": False,
+                        "requires_human_review": True,
+                    }
+                },
+            },
+        },
+        {
+            "role": "user",
+            "content": "禁止采集",
+            "trace_id": "blocked",
+            "metadata": {
+                "agent_id": "agent-a",
+                "request_metadata": {
+                    "learning_policy": {
+                        "capture_evidence": False,
+                        "propose_skills": True,
+                    }
+                },
+            },
+        },
+    ]
+
+    clusters = reflection_flow.cluster_user_messages_by_rule(rows, {"allowed", "blocked"})
+    assert len(clusters) == 1
+    assert clusters[0]["source_trace_ids"] == ["allowed"]
+
+    item = build_report_item(clusters[0], min_negative_feedback=1)
+    assert item["type"] == "learning_review"
+    assert item["learning_policy"]["propose_skills"] is False
 
 
 def test_data_ops_uses_global_lock(monkeypatch) -> None:
@@ -258,6 +404,53 @@ def test_reflection_embedding_cluster_falls_back_to_semantic_groups(monkeypatch)
 
     assert [item["count"] for item in clusters] == [2, 1]
     assert clusters[0]["negative_count"] == 1
+
+
+def test_reflection_never_clusters_evidence_across_agents(monkeypatch) -> None:
+    class FakeEncoder:
+        def encode(self, texts):
+            return [[1.0, 0.0] for _ in texts]
+
+    monkeypatch.setattr(reflection_flow, "build_encoder", lambda _settings: FakeEncoder())
+    settings = load_settings(env_path=None)
+    rows = [
+        {
+            "role": "user",
+            "content": "同一个会员问题",
+            "trace_id": "a",
+            "metadata": {"agent_id": "agent-a"},
+        },
+        {
+            "role": "user",
+            "content": "同一个会员问题",
+            "trace_id": "b",
+            "metadata": {"agent_id": "agent-b"},
+        },
+    ]
+
+    clusters = reflection_flow.cluster_user_messages(rows, {"a", "b"}, settings)
+
+    assert len(clusters) == 2
+    assert {item["agent_id"] for item in clusters} == {"agent-a", "agent-b"}
+    assert all(item["count"] == 1 for item in clusters)
+
+
+def test_reflection_skill_draft_preserves_evidence_lineage() -> None:
+    settings = load_settings(env_path=None)
+    draft = fallback_skill_draft_from_item(
+        {
+            "agent_id": "agent-a",
+            "cluster_title": "会员功能咨询",
+            "examples": ["会员功能怎么用"],
+            "source_trace_ids": ["trace-1", "trace-2"],
+        },
+        settings,
+    )
+
+    assert draft["metadata"] == {
+        "source_agent_id": "agent-a",
+        "source_trace_ids": ["trace-1", "trace-2"],
+    }
 
 
 def test_skill_index_excludes_content_and_trigger_rules() -> None:

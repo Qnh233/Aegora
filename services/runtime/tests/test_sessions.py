@@ -163,6 +163,7 @@ def test_save_chat_turn_writes_session_and_messages_to_strapi(monkeypatch) -> No
         user_message="问题",
         assistant_message="回答",
         result={"trace_id": "turn-1", "route": "chat", "skills": []},
+        request_metadata={"agent_id": "agent-1", "release_id": "rel-1", "release_version": 3},
     )
 
     assert message_key == "turn-1:assistant"
@@ -171,6 +172,10 @@ def test_save_chat_turn_writes_session_and_messages_to_strapi(monkeypatch) -> No
         "/api/chat_messages",
         "/api/chat_messages",
     ]
+    user_metadata = client.upserts[1]["data"]["metadata"]
+    assert user_metadata["agent_id"] == "agent-1"
+    assert user_metadata["release_id"] == "rel-1"
+    assert user_metadata["release_version"] == 3
 
 
 def test_save_feedback_verifies_assistant_message_in_strapi(monkeypatch) -> None:

@@ -8,7 +8,7 @@ from typing import Any
 
 from aegora_runtime.config import load_settings
 from aegora_runtime.db import connect
-from aegora_runtime.skills import skill_content_hash, validate_skill
+from aegora_runtime.skills import agent_skill_promotion_errors, skill_content_hash, validate_skill
 from aegora_runtime.strapi import StrapiClient, collection_endpoint
 
 from scripts.import_faqs import import_rows as import_faq_rows
@@ -49,7 +49,10 @@ def sync_skill_rows(rows: list[dict[str, Any]], settings) -> int:
     errors = [
         f"{row.get('name')}: {error}"
         for row in normalized
-        for error in validate_skill(row, settings.skills.max_content_chars)
+        for error in (
+            validate_skill(row, settings.skills.max_content_chars)
+            + (agent_skill_promotion_errors(row, row.get("reviewed_by")) if row.get("status") == "active" else [])
+        )
     ]
     if errors:
         raise ValueError("\n".join(errors))
@@ -63,12 +66,12 @@ def sync_skill_rows(rows: list[dict[str, Any]], settings) -> int:
                     """
                     INSERT INTO skills (
                         name, title, description, content, product_id, domain, skill_type, source,
-                        status, priority, trigger_rules, metadata, content_hash, updated_at
+                        status, priority, trigger_rules, metadata, content_hash, reviewed_by, reviewed_at, updated_at
                     )
                     VALUES (
                         %(name)s, %(title)s, %(description)s, %(content)s, %(product_id)s, %(domain)s,
                         %(skill_type)s, %(source)s, %(status)s, %(priority)s, %(trigger_rules_json)s::jsonb,
-                        %(metadata_json)s::jsonb, %(content_hash)s, now()
+                        %(metadata_json)s::jsonb, %(content_hash)s, %(reviewed_by)s, %(reviewed_at)s, now()
                     )
                     ON CONFLICT (name)
                     DO UPDATE SET
@@ -83,6 +86,8 @@ def sync_skill_rows(rows: list[dict[str, Any]], settings) -> int:
                         priority = excluded.priority,
                         trigger_rules = excluded.trigger_rules,
                         metadata = excluded.metadata,
+                        reviewed_by = excluded.reviewed_by,
+                        reviewed_at = excluded.reviewed_at,
                         version = CASE WHEN skills.content_hash <> excluded.content_hash THEN skills.version + 1 ELSE skills.version END,
                         content_hash = excluded.content_hash,
                         updated_at = now()
@@ -114,6 +119,8 @@ def normalize_strapi_skill(row: dict[str, Any]) -> dict[str, Any]:
             "strapi_id": row.get("id"),
             "strapi_document_id": row.get("documentId"),
         },
+        "reviewed_by": clean(row.get("reviewed_by")),
+        "reviewed_at": row.get("reviewed_at"),
     }
 
 

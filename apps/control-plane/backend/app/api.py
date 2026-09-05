@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from uuid import uuid4
 
 from . import (
+    cache_events,
     config,
     db,
     identity,
@@ -645,6 +646,21 @@ def list_mcp_connections(
         raise HTTPException(status_code=503, detail="数据库不可用或未配置") from error
 
 
+@app.get("/admin/runtime-config-events/metrics")
+def runtime_config_event_metrics(
+    authorization: str | None = Header(default=None),
+) -> dict[str, object]:
+    """Expose publisher health without making Redis part of request correctness."""
+    try:
+        db.ensure_schema()
+        require_current_platform_admin(authorization)
+        return cache_events.get_runtime_invalidation_publisher().delivery_metrics()
+    except HTTPException:
+        raise
+    except (psycopg.Error, RuntimeError) as error:
+        raise HTTPException(status_code=503, detail="数据库不可用或未配置") from error
+
+
 @app.put(
     "/admin/mcp-connections/{connection_id}",
     response_model=MCPConnectionDefinition,
@@ -771,6 +787,12 @@ def set_tool_status(
         tools = [tool for tool in db.fetch_tools() if tool.tool_id == tool_id]
         if not tools:
             raise HTTPException(status_code=404, detail="工具不存在")
+        cache_events.get_runtime_invalidation_publisher().publish(
+            "tool.policy.changed",
+            agent_id="*",
+            tool_id=tool_id,
+            reason=f"status:{request.status}",
+        )
         return tools[0]
     except HTTPException:
         raise
@@ -1125,6 +1147,12 @@ def publish_agent(
             release_config_snapshot(agent_id, agent, actor_id),
             actor_id,
         )
+        cache_events.get_runtime_invalidation_publisher().publish(
+            "release.published",
+            agent_id=agent_id,
+            release_id=release_id,
+            release_version=version,
+        )
     except HTTPException:
         raise
     except (psycopg.Error, RuntimeError) as error:
@@ -1168,6 +1196,12 @@ def revoke_agent_release(
             raise HTTPException(status_code=404, detail="发布版本不存在")
         if not db.revoke_agent_release(agent_id, release_id):
             raise HTTPException(status_code=409, detail="发布版本已撤销")
+        cache_events.get_runtime_invalidation_publisher().publish(
+            "release.revoked",
+            agent_id=agent_id,
+            release_id=release_id,
+            release_version=int(release["version"]),
+        )
     except HTTPException:
         raise
     except (psycopg.Error, RuntimeError) as error:

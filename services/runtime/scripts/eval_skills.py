@@ -2,13 +2,15 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
+from datetime import datetime, timezone
 from pathlib import Path
 
 from aegora_runtime.config import load_settings
 from aegora_runtime.real_agent import LazyBgeM3Encoder
-from aegora_runtime.skills import build_skill_embedding_text, select_skills, skill_vector_candidates
+from aegora_runtime.skills import build_skill_embedding_text, select_skills, skill_content_hash, skill_vector_candidates
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,6 +21,11 @@ def main() -> None:
     parser.add_argument("dataset", type=Path, nargs="?", default=ROOT / "evals" / "eval_skills.jsonl")
     parser.add_argument("--output", type=Path, default=ROOT / "evals" / "latest_skill_eval.json")
     parser.add_argument("--skill-file", type=Path, help="Evaluate unpublished JSON Skills with the real BGE encoder.")
+    parser.add_argument("--evidence-output", type=Path, help="Write promotion-ready evaluation evidence for one candidate Skill.")
+    parser.add_argument("--baseline-evidence", type=Path, help="Previous accepted evaluation evidence used as the regression baseline.")
+    parser.add_argument("--min-injection-accuracy", type=float, default=1.0)
+    parser.add_argument("--max-misinjection-rate", type=float, default=0.0)
+    parser.add_argument("--max-accuracy-regression", type=float, default=0.0)
     args = parser.parse_args()
     settings = load_settings(validate_secrets=True)
     encoder = LazyBgeM3Encoder(settings)
@@ -86,6 +93,22 @@ def main() -> None:
         "details": details,
     }
     args.output.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    if args.evidence_output:
+        if not args.skill_file or file_skills is None or len(file_skills) != 1:
+            raise ValueError("--evidence-output 必须与仅包含一条 Skill 的 --skill-file 一起使用")
+        if not args.baseline_evidence:
+            raise ValueError("--evidence-output 必须提供 --baseline-evidence，避免无回归基线的候选直接晋级")
+        baseline_evidence = json.loads(args.baseline_evidence.read_text(encoding="utf-8"))
+        evidence = build_evaluation_evidence(
+            summary,
+            args.dataset,
+            file_skills[0],
+            min_injection_accuracy=args.min_injection_accuracy,
+            max_misinjection_rate=args.max_misinjection_rate,
+            baseline_evidence=baseline_evidence,
+            max_accuracy_regression=args.max_accuracy_regression,
+        )
+        args.evidence_output.write_text(json.dumps(evidence, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps({key: value for key, value in summary.items() if key != "details"}, ensure_ascii=False, indent=2))
 
 
@@ -116,6 +139,82 @@ def cosine_similarity(left: list[float], right: list[float]) -> float:
     left_norm = math.sqrt(sum(value * value for value in left))
     right_norm = math.sqrt(sum(value * value for value in right))
     return dot / (left_norm * right_norm) if left_norm and right_norm else 0.0
+
+
+def build_evaluation_evidence(
+    summary: dict,
+    dataset: Path,
+    skill: dict,
+    *,
+    min_injection_accuracy: float,
+    max_misinjection_rate: float,
+    baseline_evidence: dict | None = None,
+    max_accuracy_regression: float = 0.0,
+) -> dict:
+    """Bind promotion evidence to the exact candidate content and dataset bytes."""
+    dataset_hash = hashlib.sha256(dataset.read_bytes()).hexdigest()
+    metrics = {
+        key: summary[key]
+        for key in [
+            "total",
+            "correct",
+            "injection_accuracy",
+            "cross_product_misinjection_rate",
+            "inactive_skill_injection_rate",
+            "commercial_irrelevant_misinjection_rate",
+            "max_injected_per_turn",
+            "commercial_frequency_accuracy",
+            "commercial_frequency_cases",
+        ]
+    }
+    absolute_passed = (
+        metrics["injection_accuracy"] >= min_injection_accuracy
+        and metrics["cross_product_misinjection_rate"] <= max_misinjection_rate
+        and metrics["inactive_skill_injection_rate"] <= max_misinjection_rate
+        and metrics["commercial_irrelevant_misinjection_rate"] <= max_misinjection_rate
+    )
+    regression = build_regression_result(metrics, baseline_evidence, max_accuracy_regression=max_accuracy_regression)
+    passed = absolute_passed and regression["status"] == "passed"
+    clean_skill = {key: value for key, value in skill.items() if key not in {"id", "status", "_vector", "retrieval_score"}}
+    return {
+        "status": "passed" if passed else "failed",
+        "dataset": f"{dataset.name}@sha256:{dataset_hash}",
+        "content_hash": skill_content_hash(clean_skill),
+        "metrics": metrics,
+        "criteria": {
+            "min_injection_accuracy": min_injection_accuracy,
+            "max_misinjection_rate": max_misinjection_rate,
+            "max_accuracy_regression": max_accuracy_regression,
+        },
+        "regression": regression,
+        "evaluated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+    }
+
+
+def build_regression_result(metrics: dict, baseline_evidence: dict | None, *, max_accuracy_regression: float) -> dict:
+    """Compare a candidate with an auditable baseline before promotion."""
+    if not isinstance(baseline_evidence, dict):
+        return {"status": "not_run", "reason": "baseline_evidence_required"}
+    if baseline_evidence.get("status") != "passed":
+        return {"status": "failed", "reason": "baseline_not_accepted"}
+    baseline_metrics = baseline_evidence.get("metrics")
+    if not isinstance(baseline_metrics, dict) or "injection_accuracy" not in baseline_metrics:
+        return {"status": "failed", "reason": "baseline_metrics_invalid"}
+    if not baseline_evidence.get("dataset") or not baseline_evidence.get("content_hash"):
+        return {"status": "failed", "reason": "baseline_lineage_invalid"}
+    baseline_accuracy = float(baseline_metrics["injection_accuracy"])
+    candidate_accuracy = float(metrics["injection_accuracy"])
+    delta = round(candidate_accuracy - baseline_accuracy, 12)
+    passed = delta >= -max_accuracy_regression
+    return {
+        "status": "passed" if passed else "failed",
+        "baseline_dataset": baseline_evidence.get("dataset"),
+        "baseline_content_hash": baseline_evidence.get("content_hash"),
+        "baseline_injection_accuracy": baseline_accuracy,
+        "candidate_injection_accuracy": candidate_accuracy,
+        "accuracy_delta": delta,
+        "max_accuracy_regression": max_accuracy_regression,
+    }
 
 
 if __name__ == "__main__":

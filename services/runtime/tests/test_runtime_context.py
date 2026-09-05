@@ -75,9 +75,33 @@ def test_build_runtime_context_filters_disabled_tools(monkeypatch) -> None:
     assert context["tool_ids"] == ["calculator"]
     assert context["tool_scopes"] == {"calculator": {"actions": ["calculate"]}}
     assert context["policy"]["disabled_tools_filtered"] == ["time_now"]
+    assert context["learning_policy"] == {
+        "capture_evidence": True,
+        "propose_skills": False,
+        "requires_human_review": True,
+    }
     assert str(context["tools"][0]["runner_tool_id"]).startswith("mcp+stdio://")
     assert context["tools"][0]["runner_name"] == "calculator"
     assert context["tools"][0]["source"] == "mcp"
+
+
+def test_build_runtime_context_carries_release_learning_policy(monkeypatch) -> None:
+    release = release_fixture()
+    release["config_json"]["learning_policy"] = {
+        "capture_evidence": False,
+        "propose_skills": True,
+        "requires_human_review": False,
+    }
+    monkeypatch.setattr(runtime_context, "active_tool_ids", lambda _: {"calculator"})
+    monkeypatch.setattr(runtime_context, "get_user_role_tool_scopes", lambda _: {"calculator": {"actions": ["calculate"]}})
+
+    context = runtime_context.build_runtime_context(release, actor_id="u_1", channel="web_console")
+
+    assert context["learning_policy"] == {
+        "capture_evidence": False,
+        "propose_skills": True,
+        "requires_human_review": False,
+    }
 
 
 def test_build_runtime_context_filters_tools_by_runtime_role_permissions(monkeypatch) -> None:
@@ -252,7 +276,19 @@ def test_resolve_runtime_context_by_version_uses_version_lookup(monkeypatch) -> 
 
 
 def test_fetch_agent_release_by_version_does_not_require_created_at(monkeypatch) -> None:
-    captured = {}
+    captured = []
+    rows = iter(
+        [
+            {
+                "release_id": "release_1",
+                "agent_id": "agent_1",
+                "version": 1,
+                "status": "published",
+                "visibility": "private",
+            },
+            {"config_json": {"agent": {}, "tools": []}},
+        ]
+    )
 
     class FakeCursor:
         def __enter__(self):
@@ -262,18 +298,10 @@ def test_fetch_agent_release_by_version_does_not_require_created_at(monkeypatch)
             return None
 
         def execute(self, query, params):
-            captured["query"] = query
-            captured["params"] = params
+            captured.append((query, params))
 
         def fetchone(self):
-            return {
-                "release_id": "release_1",
-                "agent_id": "agent_1",
-                "version": 1,
-                "status": "published",
-                "visibility": "private",
-                "config_json": {"agent": {}, "tools": []},
-            }
+            return next(rows)
 
     class FakeConn:
         def cursor(self):
@@ -284,13 +312,73 @@ def test_fetch_agent_release_by_version_does_not_require_created_at(monkeypatch)
         yield FakeConn()
 
     monkeypatch.setattr(runtime_context, "connect_agent_platform", fake_connect_agent_platform)
+    monkeypatch.setattr(
+        runtime_context,
+        "get_runtime_config_cache",
+        lambda: type(
+            "NoCache",
+            (),
+            {"get": lambda *_args, **_kwargs: None, "set": lambda *_args, **_kwargs: None},
+        )(),
+    )
 
     release = runtime_context.fetch_agent_release_by_version("agent_1", 1)
 
     assert release["release_id"] == "release_1"
-    assert captured["params"] == ("agent_1", 1)
-    assert "published_at DESC NULLS LAST" in captured["query"]
-    assert "created_at" not in captured["query"]
+    assert captured[0][1] == ("agent_1", 1)
+    assert "published_at DESC NULLS LAST" in captured[0][0]
+    assert "created_at" not in captured[0][0]
+    assert captured[1][1] == ("agent_1", "release_1")
+    assert "SELECT config_json" in captured[1][0]
+
+
+def test_fetch_agent_release_uses_cached_static_config_but_reads_current_status(monkeypatch) -> None:
+    queries = []
+
+    class FakeCursor:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def execute(self, query, params):
+            queries.append((query, params))
+
+        def fetchone(self):
+            return {
+                "release_id": "release_1",
+                "agent_id": "agent_1",
+                "version": 2,
+                "status": "revoked",
+                "visibility": "private",
+            }
+
+    class FakeConn:
+        def cursor(self):
+            return FakeCursor()
+
+    class FakeCache:
+        def get(self, **_kwargs):
+            return {"agent": {"id": "agent_1"}, "tools": []}
+
+        def set(self, *_args, **_kwargs):
+            raise AssertionError("cache hit must not write")
+
+    @contextmanager
+    def fake_connect_agent_platform():
+        yield FakeConn()
+
+    monkeypatch.setattr(runtime_context, "connect_agent_platform", fake_connect_agent_platform)
+    monkeypatch.setattr(runtime_context, "get_runtime_config_cache", lambda: FakeCache())
+
+    release = runtime_context.fetch_agent_release("agent_1", "release_1")
+
+    assert release is not None
+    assert release["status"] == "revoked"
+    assert release["config_json"] == {"agent": {"id": "agent_1"}, "tools": []}
+    assert len(queries) == 1
+    assert "config_json" not in queries[0][0]
 
 
 def test_validate_runtime_context_allows_public_release_for_active_non_owner(monkeypatch) -> None:

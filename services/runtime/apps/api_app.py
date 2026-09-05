@@ -26,6 +26,7 @@ from aegora_runtime.logging import get_logger, log_event, setup_logging
 from aegora_runtime.metrics import instrument_fastapi, metrics_response
 from aegora_runtime.real_agent import build_real_dependencies
 from aegora_runtime.runtime_approvals import ApprovalDecision, ApprovalError, default_approval_store
+from aegora_runtime.runtime_invalidation import RuntimeInvalidationSubscriber, runtime_invalidation_settings
 from aegora_runtime.service import ChatTurnInput, handle_chat_turn
 from aegora_runtime.sessions import (
     derive_user_id_from_session,
@@ -62,6 +63,32 @@ app = FastAPI(
     openapi_tags=OPENAPI_TAGS,
 )
 instrument_fastapi(app)
+
+_INVALIDATION_STOP = threading.Event()
+_INVALIDATION_SUBSCRIBER = RuntimeInvalidationSubscriber(runtime_invalidation_settings())
+_INVALIDATION_THREAD: threading.Thread | None = None
+
+
+@app.on_event("startup")
+def start_runtime_invalidation_subscriber() -> None:
+    global _INVALIDATION_THREAD
+    if not _INVALIDATION_SUBSCRIBER.settings.enabled:
+        return
+    _INVALIDATION_STOP.clear()
+    _INVALIDATION_THREAD = threading.Thread(
+        target=_INVALIDATION_SUBSCRIBER.run,
+        args=(_INVALIDATION_STOP,),
+        daemon=True,
+        name="aegora-runtime-invalidation",
+    )
+    _INVALIDATION_THREAD.start()
+
+
+@app.on_event("shutdown")
+def stop_runtime_invalidation_subscriber() -> None:
+    _INVALIDATION_STOP.set()
+    if _INVALIDATION_THREAD is not None:
+        _INVALIDATION_THREAD.join(timeout=2)
 
 
 SENSITIVE_LOG_KEYS = {
@@ -548,6 +575,14 @@ def run_configured_request(
         approval_store=default_approval_store,
     )
     answer = result.get("answer") or "未生成回答"
+    release = context.get("release") if isinstance(context.get("release"), dict) else {}
+    persist_metadata = {
+        **metadata,
+        "agent_id": agent_id,
+        "release_id": release_id,
+        "release_version": release.get("version"),
+        "learning_policy": context.get("learning_policy") or {},
+    }
     try:
         save_chat_turn(
             SETTINGS,
@@ -557,7 +592,7 @@ def run_configured_request(
             assistant_message=answer,
             result=result,
             source=source,
-            request_metadata=metadata,
+            request_metadata=persist_metadata,
         )
     except Exception as exc:
         log_event(
@@ -614,7 +649,13 @@ def run_configured_webhook_request(
             assistant_message=answer,
             result=result,
             source="webhook",
-            request_metadata={**metadata, "release_id": release_id, "version": version},
+            request_metadata={
+                **metadata,
+                "agent_id": agent_id,
+                "release_id": release_id,
+                "release_version": version,
+                "learning_policy": context.get("learning_policy") or {},
+            },
         )
     except Exception as exc:
         log_event(

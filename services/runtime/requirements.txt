@@ -9,3 +9,4 @@ streamlit>=1.35,<2
 numpy>=1.26,<2
 wecom-aibot-sdk>=1.0.8,<2
 fastmcp==3.0.0
+redis>=5,<7

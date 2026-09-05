@@ -13,7 +13,11 @@ from aegora_runtime.config import Settings, load_settings
 @contextmanager
 def connect(settings: Settings | None = None) -> Iterator[Connection]:
     cfg = settings or load_settings(validate_secrets=True)
-    with psycopg.connect(cfg.postgres.dsn, row_factory=dict_row) as conn:
+    with psycopg.connect(
+        cfg.postgres.dsn,
+        row_factory=dict_row,
+        connect_timeout=cfg.postgres.connect_timeout_seconds,
+    ) as conn:
         yield conn
 
 

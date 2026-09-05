@@ -252,8 +252,9 @@ def build_configured_dependencies(
         approval_store,
         run_metadata=run_metadata or {},
     )
-    tool_executor.hooks.after_call.append(lambda event: safe_write_tool_log(settings, event))
-    tool_executor.hooks.on_error.append(lambda event: safe_write_tool_log(settings, event))
+    if settings.observability.tool_log_db_enabled:
+        tool_executor.hooks.after_call.append(lambda event: safe_write_tool_log(settings, event))
+        tool_executor.hooks.on_error.append(lambda event: safe_write_tool_log(settings, event))
     return AgentDependencies(
         load_context=lambda request: load_configured_context(request, runtime_context, settings),
         load_skills=load_configured_skills,
