@@ -195,6 +195,19 @@ type ToolDefinition = {
   manifest_hash: string;
 };
 
+type WorkflowVersionSummary = {
+  workflow_id: string;
+  version: string;
+  lifecycle_status: "active" | "retired";
+  manifest_hash: string;
+  created_by: string;
+  created_at: string;
+  activated_by: string;
+  activated_at: string;
+  retired_by: string | null;
+  retired_at: string | null;
+};
+
 type MCPConnection = {
   connection_id: string;
   name: string;
@@ -556,6 +569,10 @@ export default function App() {
   const [editingMcpConnection, setEditingMcpConnection] = useState<MCPConnection | null>(null);
   const [mcpConnectionEditorOpen, setMcpConnectionEditorOpen] = useState(false);
   const [workflowEditorOpen, setWorkflowEditorOpen] = useState(false);
+  const [workflowHistoryOpen, setWorkflowHistoryOpen] = useState(false);
+  const [workflowHistoryTool, setWorkflowHistoryTool] = useState<ToolDefinition | null>(null);
+  const [workflowVersions, setWorkflowVersions] = useState<WorkflowVersionSummary[]>([]);
+  const [workflowHistoryLoading, setWorkflowHistoryLoading] = useState(false);
   const [lastRun, setLastRun] = useState<RunResult | null>(null);
   const [submittingApprovalId, setSubmittingApprovalId] = useState<string | null>(null);
   const [expandedToolLayers, setExpandedToolLayers] = useState<string[]>([]);
@@ -2410,6 +2427,71 @@ export default function App() {
       }
     }
 
+    async function loadWorkflowVersions(workflowId: string) {
+      setWorkflowHistoryLoading(true);
+      try {
+        const versions = await request<WorkflowVersionSummary[]>(
+          `/admin/workflows/${encodeURIComponent(workflowId)}/versions`,
+          undefined,
+          authToken
+        );
+        setWorkflowVersions(versions);
+      } catch (error) {
+        setWorkflowVersions([]);
+        toast.error(error instanceof Error ? error.message : "Workflow 版本历史加载失败");
+      } finally {
+        setWorkflowHistoryLoading(false);
+      }
+    }
+
+    function openWorkflowHistory(tool: ToolDefinition) {
+      setWorkflowHistoryTool(tool);
+      setWorkflowVersions([]);
+      setWorkflowHistoryOpen(true);
+      void loadWorkflowVersions(tool.tool_id);
+    }
+
+    async function retireWorkflowVersion(version: WorkflowVersionSummary) {
+      if (!workflowHistoryTool) return;
+      setWorkflowHistoryLoading(true);
+      try {
+        await request(
+          `/admin/workflows/${encodeURIComponent(workflowHistoryTool.tool_id)}/versions/${encodeURIComponent(version.version)}/retire`,
+          { method: "POST" },
+          authToken
+        );
+        const versions = await request<WorkflowVersionSummary[]>(
+          `/admin/workflows/${encodeURIComponent(workflowHistoryTool.tool_id)}/versions`,
+          undefined,
+          authToken
+        );
+        setWorkflowVersions(versions);
+        if (workflowHistoryTool.version === version.version) {
+          setWorkflowHistoryTool((current) =>
+            current ? { ...current, status: "disabled" } : current
+          );
+        }
+        await refresh();
+        toast.success(`${workflowHistoryTool.tool_id}@${version.version} 已退役`);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Workflow 版本退役失败");
+      } finally {
+        setWorkflowHistoryLoading(false);
+      }
+    }
+
+    function confirmRetireWorkflowVersion(version: WorkflowVersionSummary) {
+      Modal.confirm({
+        title: `退役 ${version.workflow_id}@${version.version}？`,
+        content:
+          "退役会保留不可变版本事实；如果这是当前 active 版本，对应 Runtime tools 投影也会被禁用。",
+        okText: "确认退役",
+        cancelText: "取消",
+        okButtonProps: { danger: true },
+        onOk: () => retireWorkflowVersion(version)
+      });
+    }
+
     function openWorkflowEditor() {
       workflowForm.resetFields();
       workflowForm.setFieldsValue({
@@ -2744,13 +2826,20 @@ export default function App() {
                           title: "操作",
                           key: "action",
                           render: (_: unknown, tool: ToolDefinition) => (
-                            <Button
-                              danger={tool.status === "active"}
-                              loading={loading}
-                              onClick={() => updateToolStatus(tool, tool.status === "active" ? "disabled" : "active")}
-                            >
-                              {tool.status === "active" ? "关闭" : "开启"}
-                            </Button>
+                            <Space wrap>
+                              {tool.source === "workflow" && (
+                                <Button icon={<HistoryOutlined />} onClick={() => openWorkflowHistory(tool)}>
+                                  版本
+                                </Button>
+                              )}
+                              <Button
+                                danger={tool.status === "active"}
+                                loading={loading}
+                                onClick={() => updateToolStatus(tool, tool.status === "active" ? "disabled" : "active")}
+                              >
+                                {tool.status === "active" ? "关闭" : "开启"}
+                              </Button>
+                            </Space>
                           )
                         }
                       ]}
@@ -2853,6 +2942,106 @@ export default function App() {
               <Input.TextArea rows={4} />
             </Form.Item>
           </Form>
+        </Modal>
+
+        <Modal
+          title={workflowHistoryTool ? `${toolName(workflowHistoryTool)} · 版本历史` : "Workflow 版本历史"}
+          open={workflowHistoryOpen}
+          onCancel={() => setWorkflowHistoryOpen(false)}
+          footer={[
+            <Button key="close" onClick={() => setWorkflowHistoryOpen(false)}>
+              关闭
+            </Button>
+          ]}
+          width={900}
+        >
+          <Alert
+            type="info"
+            showIcon
+            message="版本生命周期与 Runtime 开关是两个维度"
+            description="active / retired 表示不可变 Workflow 版本事实；工具表的开启/关闭只控制当前 Runtime 投影。退役当前 active 版本时会同步禁用该投影。"
+            style={{ marginBottom: 16 }}
+          />
+          <Table
+            rowKey={(version) => `${version.workflow_id}@${version.version}`}
+            loading={workflowHistoryLoading}
+            dataSource={workflowVersions}
+            pagination={false}
+            locale={{ emptyText: "暂无已发布版本" }}
+            columns={[
+              {
+                title: "版本",
+                dataIndex: "version",
+                render: (version: string) => (
+                  <Space wrap>
+                    <Typography.Text code>{version}</Typography.Text>
+                    {workflowHistoryTool?.version === version && <Tag color="blue">当前投影</Tag>}
+                    {workflowHistoryTool?.version === version && workflowHistoryTool.status !== "active" && (
+                      <Tag>Runtime 已关闭</Tag>
+                    )}
+                  </Space>
+                )
+              },
+              {
+                title: "生命周期",
+                dataIndex: "lifecycle_status",
+                render: (status: WorkflowVersionSummary["lifecycle_status"]) => (
+                  <Tag color={status === "active" ? "green" : "default"}>{status}</Tag>
+                )
+              },
+              {
+                title: "Manifest Hash",
+                dataIndex: "manifest_hash",
+                render: (hash: string) => (
+                  <Typography.Text code ellipsis={{ tooltip: hash }} style={{ maxWidth: 220 }}>
+                    {hash}
+                  </Typography.Text>
+                )
+              },
+              {
+                title: "发布",
+                key: "created",
+                render: (_: unknown, row: WorkflowVersionSummary) => (
+                  <Space direction="vertical" size={0}>
+                    <Typography.Text>{new Date(row.created_at).toLocaleString()}</Typography.Text>
+                    <Typography.Text type="secondary">{row.created_by}</Typography.Text>
+                  </Space>
+                )
+              },
+              {
+                title: "最近状态变更",
+                key: "lifecycle-time",
+                render: (_: unknown, row: WorkflowVersionSummary) => (
+                  <Space direction="vertical" size={0}>
+                    <Typography.Text>
+                      {new Date(row.retired_at ?? row.activated_at).toLocaleString()}
+                    </Typography.Text>
+                    <Typography.Text type="secondary">
+                      {row.retired_at
+                        ? `retired by ${row.retired_by ?? "unknown"}`
+                        : `activated by ${row.activated_by}`}
+                    </Typography.Text>
+                  </Space>
+                )
+              },
+              {
+                title: "操作",
+                key: "action",
+                render: (_: unknown, row: WorkflowVersionSummary) =>
+                  row.lifecycle_status === "active" ? (
+                    <Button
+                      danger
+                      loading={workflowHistoryLoading}
+                      onClick={() => confirmRetireWorkflowVersion(row)}
+                    >
+                      退役
+                    </Button>
+                  ) : (
+                    <Typography.Text type="secondary">历史版本</Typography.Text>
+                  )
+              }
+            ]}
+          />
         </Modal>
 
         <Modal
