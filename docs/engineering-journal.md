@@ -1,5 +1,18 @@
 # Aegora Engineering Journal
 
+## 2026-09-05 — Immutable Workflow versions and lifecycle projection
+
+- **Objective / roadmap item:** establish a real Workflow version/lifecycle boundary instead of letting `PUT /admin/workflows/{id}` overwrite the only live `tools` row in place.
+- **Key design decision:** split authoritative Workflow version facts from the Runtime projection. `workflow_versions` stores immutable published manifests keyed by `workflow_id + version`; `tools` remains the current executable projection consumed by Release/runtime resolution.
+- **Lifecycle invariant:** one Workflow can have at most one `active` version (enforced by a partial unique index). Publishing a new version retires the previous active version, while re-publishing the same version is allowed only when its manifest hash is identical. Attempting to mutate already-published content under the same version returns HTTP 409. A per-Workflow PostgreSQL transaction advisory lock serializes concurrent publishes so two new versions cannot race before either version row exists.
+- **Operational distinction:** version lifecycle (`active` / `retired`) is separate from the live tool enable/disable switch. Retiring the currently projected version disables the corresponding live Workflow tool, while ordinary tool status changes do not rewrite immutable version facts.
+- **API surface:** the existing Workflow registration endpoint now publishes through the immutable version store; admin APIs can list Workflow versions and retire a specific version. Existing Runtime/MCP execution adapters remain unchanged.
+- **UX tradeoff:** the registration UI now defaults to `v1` and explicitly tells administrators to bump the version when configuration changes. Historical-version listing/retirement UI is deferred rather than coupling database lifecycle work to a larger console redesign.
+- **Pitfall/root cause:** the previous `version` field looked versioned but was only metadata on an upserted `tools` row, so changing a Workflow under the same ID silently destroyed the previous manifest and made rollback/audit semantics weak.
+- **Highlight/reusable pattern:** keep immutable governance facts append-oriented and make the mutable runtime table a projection. This mirrors Aegora's Agent Release design and keeps rollback/audit semantics understandable without forcing Runtime to query historical tables.
+- **Verification:** focused Workflow tests passed 5/5; full Control Plane suite passed 96/96; frontend production build passed with Vite 8.0.16 (3018 modules transformed). The existing >500 kB bundle warning remains a separate frontend optimization item.
+- **Next step:** expose Workflow version history/retirement in the console, then decide whether `draft`/`canary` states are justified by real deployment workflows before adding more lifecycle states.
+
 ## 2026-09-05 — Workflow Scope Schema governance editing
 
 - **Objective / roadmap item:** close the remaining first-phase Workflow governance gap by letting administrators define scoped allow-lists instead of registering every Workflow with an empty scope policy.

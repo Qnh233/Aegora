@@ -2413,7 +2413,7 @@ export default function App() {
     function openWorkflowEditor() {
       workflowForm.resetFields();
       workflowForm.setFieldsValue({
-        version: "dev",
+        version: "v1",
         requires_approval: false,
         side_effect_level: "internal_write",
         timeout_ms: 30000,
@@ -2810,7 +2810,12 @@ export default function App() {
               </Form.Item>
             </Space>
             <Space wrap size="large">
-              <Form.Item name="version" label="版本">
+              <Form.Item
+                name="version"
+                label="版本"
+                tooltip="已发布版本内容不可原地修改；配置变化时请提升版本号，例如 v1 -> v2。"
+                rules={[{ required: true, message: "请输入 Workflow 版本" }]}
+              >
                 <Input placeholder="v1" />
               </Form.Item>
               <Form.Item name="timeout_ms" label="超时（ms）">

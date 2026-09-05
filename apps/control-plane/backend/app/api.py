@@ -60,6 +60,7 @@ from .models import (
     UserProfile,
     UserRequest,
     WorkflowCapabilityRequest,
+    WorkflowVersionSummary,
 )
 
 app = FastAPI(title="Agent Platform")
@@ -756,19 +757,56 @@ def set_workflow_capability(
         raise HTTPException(status_code=422, detail="workflow_id 格式不合法")
     try:
         db.ensure_schema()
-        require_current_platform_admin(authorization)
+        actor_id = require_current_platform_admin(authorization)
         workflow = workflow_definition_from_request(workflow_id, request)
-        db.upsert_tool(workflow)
+        version = db.publish_workflow_version(workflow, actor_id)
+    except HTTPException:
+        raise
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except (psycopg.Error, RuntimeError) as error:
+        raise HTTPException(status_code=503, detail="数据库不可用或未配置") from error
+    return workflow.model_copy(update={"manifest_hash": version.manifest_hash})
+
+
+@app.get(
+    "/admin/workflows/{workflow_id}/versions",
+    response_model=list[WorkflowVersionSummary],
+)
+def list_workflow_versions(
+    workflow_id: str,
+    authorization: str | None = Header(default=None),
+) -> list[WorkflowVersionSummary]:
+    try:
+        db.ensure_schema()
+        require_current_platform_admin(authorization)
+        return db.fetch_workflow_versions(workflow_id)
     except HTTPException:
         raise
     except (psycopg.Error, RuntimeError) as error:
         raise HTTPException(status_code=503, detail="数据库不可用或未配置") from error
-    return workflow.model_copy(
-        update={
-            "manifest_hash": workflow.manifest_hash
-            or db.compute_tool_manifest_hash(workflow)
-        }
-    )
+
+
+@app.post(
+    "/admin/workflows/{workflow_id}/versions/{version}/retire",
+    response_model=WorkflowVersionSummary,
+)
+def retire_workflow_version(
+    workflow_id: str,
+    version: str,
+    authorization: str | None = Header(default=None),
+) -> WorkflowVersionSummary:
+    try:
+        db.ensure_schema()
+        actor_id = require_current_platform_admin(authorization)
+        retired = db.retire_workflow_version(workflow_id, version, actor_id)
+        if retired is None:
+            raise HTTPException(status_code=404, detail="Workflow 版本不存在")
+        return retired
+    except HTTPException:
+        raise
+    except (psycopg.Error, RuntimeError) as error:
+        raise HTTPException(status_code=503, detail="数据库不可用或未配置") from error
 
 
 @app.put("/admin/tools/{tool_id}/status", response_model=ToolDefinition)

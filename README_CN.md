@@ -157,7 +157,7 @@ PYTHONPATH=src uvicorn apps.api_app:app --host 127.0.0.1 --port 5000
 
 下一步重点：
 
-1. Workflow Capability 已补齐首轮治理编辑能力：管理员可以基于已有 MCP Connection 注册受治理工作流能力，Runtime 复用 MCP 执行适配器并保留 `source=workflow` 语义；控制台现在支持显式编辑 Input Schema、Scope allow-list Schema 与 Scope 描述。下一步继续补充工作流版本/生命周期管理。
+1. Workflow Capability 已补齐首轮治理编辑与版本生命周期基础：管理员可以基于已有 MCP Connection 注册受治理工作流能力，Runtime 复用 MCP 执行适配器并保留 `source=workflow` 语义；控制台支持显式编辑 Input Schema、Scope allow-list Schema 与 Scope 描述。发布时会把 `workflow_id + version` 固化为不可变版本事实，同一 Workflow 同时最多一个 `active` 版本，新版本发布会把旧版本转为 `retired` 并更新 `tools` 运行投影；管理员 API 可列出历史版本并退役指定版本。下一步补充版本历史/退役的前端管理体验，以及更完整的 draft/canary 生命周期。
 2. 继续硬化 LiteLLM / Langfuse 生产链路：锁定验证过的镜像 Digest，增加多 Provider Fallback、预算策略与 Trace/Eval 看板。
 3. Redis 缓存第一/二阶段与事件层第一阶段已在 Roadmap 分支落地：Runtime 仅缓存不可变 Release `config_json`，链路为有界进程内 L1 + 版本化 Redis L2；Control Plane 发布版本化的发布/撤销/工具策略事件，Runtime 订阅并对相关 Release 精确失效。Runtime Prometheus 已补充 applied/ignored/invalid 事件计数、事件消费延迟和订阅重连失败指标；Control Plane 也增加了低基数的发布成功/失败/禁用计数，并通过管理员运维接口暴露当前 Publisher 状态。Release 状态、RBAC、工具状态与 MCP Connection 状态仍实时读取 PostgreSQL。下一步仅在确认存在真实 stale MCP Session 风险时再增加定向 Session 收敛动作。
 4. 受治理学习第一阶段已进入本次集成候选：已加入 Agent/Release 血缘、Release 级学习策略快照、Skill 提案显式 opt-in、绑定候选内容的离线评测证据、回归对比、Canary 证据要求与人工审核晋级门禁。下一步从真实受控的 shadow/limited 流量自动生成 Canary 证据，并闭合剩余自动化数据飞轮。

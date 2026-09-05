@@ -158,7 +158,8 @@ frontend/
 | --- | --- |
 | `users` | 开发期用户表，保存用户 ID 和启停状态。 |
 | `user_sessions` | 开发期登录会话表，只保存 token hash 和撤销时间。 |
-| `tools` | 工具 manifest 镜像表，保存平台可治理的工具 ID、Runner 映射、scope schema、input schema 和执行安全属性。 |
+| `tools` | 工具 manifest 运行投影表，保存当前 Runtime 可解析的工具 ID、Runner 映射、scope schema、input schema 和执行安全属性。 |
+| `workflow_versions` | Workflow 不可变发布版本事实表；同一 `workflow_id + version` 内容不可原地修改，同一 Workflow 同时最多一个 `active` 版本，旧版本保留为 `retired`。 |
 | `mcp_connections` | MCP 连接事实源，保存 Streamable HTTP/stdio 配置、环境变量引用、连接 TTL、发现 TTL、配置版本和哈希。 |
 | `roles` | 角色表，包含名称、描述、启停状态和 `is_system`；MVP 预置四个系统角色，也支持自定义角色。 |
 | `user_roles` | 用户和角色绑定表，一个用户可绑定多个角色。 |

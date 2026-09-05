@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 from typing import Any
 from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
@@ -225,7 +226,7 @@ class WorkflowCapabilityRequest(BaseModel):
     status: str = Field(default="active", pattern="^(active|disabled)$")
     mcp_connection_id: str = Field(min_length=1, max_length=100)
     runner_name: str = Field(min_length=1, max_length=100)
-    version: str = Field(default="dev", max_length=100)
+    version: str = Field(default="v1", min_length=1, max_length=100)
     requires_approval: bool = False
     side_effect_level: str = Field(
         default="internal_write",
@@ -238,6 +239,19 @@ class WorkflowCapabilityRequest(BaseModel):
     input_schema: dict[str, Any] = Field(default_factory=dict)
     scope_schema: dict[str, list[str]] = Field(default_factory=dict)
     scope_descriptions: dict[str, str] = Field(default_factory=dict)
+
+
+class WorkflowVersionSummary(BaseModel):
+    workflow_id: str
+    version: str
+    lifecycle_status: str = Field(pattern="^(active|retired)$")
+    manifest_hash: str
+    created_by: str
+    created_at: datetime
+    activated_by: str
+    activated_at: datetime
+    retired_by: str | None = None
+    retired_at: datetime | None = None
 
 
 class AgentToolConfig(BaseModel):

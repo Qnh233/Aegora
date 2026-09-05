@@ -16,6 +16,7 @@ from .models import (
     RoleSummary,
     RunSummary,
     ToolDefinition,
+    WorkflowVersionSummary,
 )
 
 
@@ -111,6 +112,31 @@ def ensure_schema() -> None:
                     manifest_hash TEXT NOT NULL DEFAULT '',
                     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
                 )
+                """
+            )
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS workflow_versions (
+                    workflow_id TEXT NOT NULL,
+                    version TEXT NOT NULL,
+                    lifecycle_status TEXT NOT NULL CHECK (lifecycle_status IN ('active', 'retired')),
+                    manifest_json JSONB NOT NULL,
+                    manifest_hash TEXT NOT NULL,
+                    created_by TEXT NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    activated_by TEXT NOT NULL,
+                    activated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    retired_by TEXT,
+                    retired_at TIMESTAMPTZ,
+                    PRIMARY KEY (workflow_id, version)
+                )
+                """
+            )
+            cursor.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS workflow_versions_one_active
+                ON workflow_versions(workflow_id)
+                WHERE lifecycle_status = 'active'
                 """
             )
             cursor.execute(
@@ -588,6 +614,184 @@ def upsert_tool(tool: ToolDefinition) -> None:
     with psycopg.connect(database_url()) as connection:
         with connection.cursor() as cursor:
             _upsert_tool(cursor, tool)
+
+
+def row_to_workflow_version_summary(row: tuple) -> WorkflowVersionSummary:
+    return WorkflowVersionSummary(
+        workflow_id=row[0],
+        version=row[1],
+        lifecycle_status=row[2],
+        manifest_hash=row[3],
+        created_by=row[4],
+        created_at=row[5],
+        activated_by=row[6],
+        activated_at=row[7],
+        retired_by=row[8],
+        retired_at=row[9],
+    )
+
+
+def publish_workflow_version(
+    tool: ToolDefinition,
+    actor_id: str,
+) -> WorkflowVersionSummary:
+    if tool.source != "workflow":
+        raise ValueError("仅 workflow 工具支持版本发布")
+    manifest_hash = tool.manifest_hash or compute_tool_manifest_hash(tool)
+    immutable_tool = tool.model_copy(update={"manifest_hash": manifest_hash})
+    manifest_json = json.dumps(
+        immutable_tool.model_dump(mode="json"),
+        ensure_ascii=False,
+    )
+    with psycopg.connect(database_url()) as connection:
+        with connection.cursor() as cursor:
+            # Serialize lifecycle transitions per Workflow even when two new versions
+            # are published concurrently and no version row exists yet.
+            cursor.execute(
+                "SELECT pg_advisory_xact_lock(hashtext(%s))",
+                (tool.tool_id,),
+            )
+            cursor.execute(
+                """
+                SELECT manifest_hash
+                FROM workflow_versions
+                WHERE workflow_id = %s AND version = %s
+                FOR UPDATE
+                """,
+                (tool.tool_id, tool.version),
+            )
+            existing = cursor.fetchone()
+            if existing is not None and existing[0] != manifest_hash:
+                raise ValueError(
+                    f"Workflow 版本 {tool.tool_id}@{tool.version} 已发布且内容不可变"
+                )
+
+            cursor.execute(
+                """
+                UPDATE workflow_versions
+                SET lifecycle_status = 'retired',
+                    retired_by = %s,
+                    retired_at = now()
+                WHERE workflow_id = %s
+                  AND lifecycle_status = 'active'
+                  AND version <> %s
+                """,
+                (actor_id, tool.tool_id, tool.version),
+            )
+            if existing is None:
+                cursor.execute(
+                    """
+                    INSERT INTO workflow_versions (
+                        workflow_id, version, lifecycle_status, manifest_json, manifest_hash,
+                        created_by, activated_by
+                    )
+                    VALUES (%s, %s, 'active', %s::jsonb, %s, %s, %s)
+                    """,
+                    (
+                        tool.tool_id,
+                        tool.version,
+                        manifest_json,
+                        manifest_hash,
+                        actor_id,
+                        actor_id,
+                    ),
+                )
+            else:
+                cursor.execute(
+                    """
+                    UPDATE workflow_versions
+                    SET lifecycle_status = 'active',
+                        activated_by = %s,
+                        activated_at = now(),
+                        retired_by = NULL,
+                        retired_at = NULL
+                    WHERE workflow_id = %s AND version = %s
+                    """,
+                    (actor_id, tool.tool_id, tool.version),
+                )
+
+            _upsert_tool(cursor, immutable_tool)
+            cursor.execute(
+                """
+                SELECT workflow_id, version, lifecycle_status, manifest_hash,
+                       created_by, created_at, activated_by, activated_at,
+                       retired_by, retired_at
+                FROM workflow_versions
+                WHERE workflow_id = %s AND version = %s
+                """,
+                (tool.tool_id, tool.version),
+            )
+            return row_to_workflow_version_summary(cursor.fetchone())
+
+
+def fetch_workflow_versions(workflow_id: str) -> list[WorkflowVersionSummary]:
+    with psycopg.connect(database_url()) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT workflow_id, version, lifecycle_status, manifest_hash,
+                       created_by, created_at, activated_by, activated_at,
+                       retired_by, retired_at
+                FROM workflow_versions
+                WHERE workflow_id = %s
+                ORDER BY created_at DESC, version DESC
+                """,
+                (workflow_id,),
+            )
+            return [row_to_workflow_version_summary(row) for row in cursor.fetchall()]
+
+
+def retire_workflow_version(
+    workflow_id: str,
+    version: str,
+    actor_id: str,
+) -> WorkflowVersionSummary | None:
+    with psycopg.connect(database_url()) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT lifecycle_status
+                FROM workflow_versions
+                WHERE workflow_id = %s AND version = %s
+                FOR UPDATE
+                """,
+                (workflow_id, version),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                return None
+            cursor.execute(
+                """
+                UPDATE workflow_versions
+                SET lifecycle_status = 'retired',
+                    retired_by = COALESCE(retired_by, %s),
+                    retired_at = COALESCE(retired_at, now())
+                WHERE workflow_id = %s AND version = %s
+                """,
+                (actor_id, workflow_id, version),
+            )
+            if row[0] == "active":
+                cursor.execute(
+                    """
+                    UPDATE tools
+                    SET status = 'disabled'
+                    WHERE id = %s
+                      AND source = 'workflow'
+                      AND version = %s
+                    """,
+                    (workflow_id, version),
+                )
+            cursor.execute(
+                """
+                SELECT workflow_id, version, lifecycle_status, manifest_hash,
+                       created_by, created_at, activated_by, activated_at,
+                       retired_by, retired_at
+                FROM workflow_versions
+                WHERE workflow_id = %s AND version = %s
+                """,
+                (workflow_id, version),
+            )
+            return row_to_workflow_version_summary(cursor.fetchone())
 
 
 def replace_discovered_mcp_tools(
