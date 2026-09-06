@@ -4,17 +4,42 @@ model_list:
       model: os.environ/LITELLM_UPSTREAM_CHAT_MODEL
       api_base: os.environ/LITELLM_UPSTREAM_BASE_URL
       api_key: os.environ/LITELLM_UPSTREAM_API_KEY
+    # __AEGORA_PRIMARY_CHAT_MODEL_INFO__
 
   - model_name: aegora-fast
     litellm_params:
       model: os.environ/LITELLM_UPSTREAM_FAST_MODEL
       api_base: os.environ/LITELLM_UPSTREAM_BASE_URL
       api_key: os.environ/LITELLM_UPSTREAM_API_KEY
+    # __AEGORA_PRIMARY_FAST_MODEL_INFO__
+
+  - model_name: aegora-chat-fallback
+    litellm_params:
+      model: os.environ/LITELLM_FALLBACK_CHAT_MODEL
+      api_base: os.environ/LITELLM_FALLBACK_BASE_URL
+      api_key: os.environ/LITELLM_FALLBACK_API_KEY
+    # __AEGORA_FALLBACK_CHAT_MODEL_INFO__
+
+  - model_name: aegora-fast-fallback
+    litellm_params:
+      model: os.environ/LITELLM_FALLBACK_FAST_MODEL
+      api_base: os.environ/LITELLM_FALLBACK_BASE_URL
+      api_key: os.environ/LITELLM_FALLBACK_API_KEY
+    # __AEGORA_FALLBACK_FAST_MODEL_INFO__
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  # __AEGORA_BUDGET_GENERAL_SETTINGS__
 
 litellm_settings:
-  master_key: os.environ/LITELLM_MASTER_KEY
   callbacks: ["langfuse_otel"]
+  # __AEGORA_BUDGET_LITELLM_SETTINGS__
 
 router_settings:
+  fallbacks:
+    - aegora-chat: ["aegora-chat-fallback"]
+    - aegora-fast: ["aegora-fast-fallback"]
   num_retries: 2
+  allowed_fails: 2
+  cooldown_time: 60
   timeout: 30

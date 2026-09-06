@@ -21,13 +21,48 @@ Control Plane 与 Runtime 可以独立扩缩容；Runtime 保持业务无状态�
 
 ## LiteLLM + Langfuse
 
-`deploy/litellm-config.yaml` 是统一模型入口配置。应用只认识 `aegora-chat` 与 `aegora-fast` 两个稳定别名；真实 Provider、模型名和 Key 只存在于 LiteLLM 环境配置中。Runtime 与 Control Plane 都通过 OpenAI-compatible `/v1` 接口访问 LiteLLM，因此 Provider 切换不要求修改 Agent 业务代码。
+`deploy/litellm-config.yaml` 是统一模型入口模板。应用仍只认识 `aegora-chat` 与 `aegora-fast` 两个稳定别名；LiteLLM 内部再把它们路由到 primary deployment，并在失败/限流时切到 `aegora-chat-fallback` / `aegora-fast-fallback`。真实 Provider、模型名和 Key 只存在于 LiteLLM 环境配置中，Runtime 与 Control Plane 不感知 Provider 数量或 fallback 细节。部署前 `deploy/render_litellm_config.py` 会把模板渲染成未提交的 `litellm-config.runtime.yaml`，Compose 只挂载该运行配置。
 
 Staging/production 的 LiteLLM 镜像必须使用不可变 `@sha256:` 引用，而不是 `main-latest`、`stable` 等可移动 tag。GitHub Environment 负责保存已完成兼容性验证的 digest；部署 workflow 会在拉取前校验 digest 格式，并在拉取后用 `docker image inspect` 确认镜像已经存在。这样升级 LiteLLM 变成一次显式、可审计的发布决策，而不会因为上游 tag 漂移在无代码变更时悄悄换版本。LiteLLM 官方也建议生产使用经过稳定性测试的 stable release，并支持对官方 GHCR 镜像做签名验证；Aegora 在选定 release 后进一步固定其 digest。
 
 Langfuse 使用两条互补链路：Runtime 用 Python SDK v4 为每次 Agent run 建立根 span，并根据现有 `trace_id` 生成确定性的 Langfuse Trace ID；LiteLLM 用 `langfuse_otel` callback 自动记录模型输入输出、token、延迟和错误。Runtime 会把同一个 Langfuse `trace_id` 作为 LiteLLM `metadata` 发送，使 Agent trace 与 LLM generation 落在同一条 Trace 中。
 
 Runtime 侧 tracing 是非关键依赖：`LANGFUSE_TRACING_ENABLED=false` 时不会创建应用 span；SDK 初始化异常也不会阻断 Agent 请求。使用当前 LiteLLM 配置时，staging/production 需要提供有效的 Langfuse Key，否则应移除/关闭 Proxy 的 `langfuse_otel` callback。
+
+### Provider fallback 与预算门禁
+
+主/备 Provider 分开配置，Aegora 应用侧别名保持不变：
+
+```text
+LITELLM_UPSTREAM_API_KEY=<primary provider key>
+LITELLM_UPSTREAM_BASE_URL=<primary OpenAI-compatible URL>
+LITELLM_UPSTREAM_CHAT_MODEL=openai/<primary-chat>
+LITELLM_UPSTREAM_FAST_MODEL=openai/<primary-fast>
+
+LITELLM_FALLBACK_API_KEY=<secondary provider key>
+LITELLM_FALLBACK_BASE_URL=<secondary OpenAI-compatible URL>
+LITELLM_FALLBACK_CHAT_MODEL=openai/<secondary-chat>
+LITELLM_FALLBACK_FAST_MODEL=openai/<secondary-fast>
+```
+
+Router 当前对两个稳定别名各配置一条 fallback，并保留有限重试、失败冷却与请求超时。这里不在 Runtime 再实现第二套路由逻辑：Provider 故障切换属于 LiteLLM Gateway 职责，业务 Runner 继续只调用稳定别名。
+
+全局美元预算是可选门禁：`LITELLM_MAX_BUDGET_USD` 留空时不启用；一旦配置预算，必须同时提供 `LITELLM_DATABASE_URL`。Aegora 的 renderer 会直接拒绝“有预算但没有 PostgreSQL”的配置，并写入 `fail_closed_budget_enforcement: true`，避免把一个本应是硬门禁的预算退化成进程内 best-effort 统计。当前 Aegora 只接受 `LITELLM_BUDGET_DURATION=30d`：LiteLLM 的全局 `max_budget` 在现有实现/历史版本中存在按 30 天窗口核算、而自定义 reset duration 语义不稳定的问题，因此这里宁可把未验证的周期挡在部署前，也不暴露一个看似可配置但可能不按预期重置的硬预算。后续只有在选定的 pinned LiteLLM digest 实测通过后才放开其他周期。
+
+对于 LiteLLM 自带价格表无法识别的自定义 Gateway 模型，可以显式提供每 token 成本：
+
+```text
+LITELLM_PRIMARY_CHAT_INPUT_COST_PER_TOKEN=
+LITELLM_PRIMARY_CHAT_OUTPUT_COST_PER_TOKEN=
+LITELLM_PRIMARY_FAST_INPUT_COST_PER_TOKEN=
+LITELLM_PRIMARY_FAST_OUTPUT_COST_PER_TOKEN=
+LITELLM_FALLBACK_CHAT_INPUT_COST_PER_TOKEN=
+LITELLM_FALLBACK_CHAT_OUTPUT_COST_PER_TOKEN=
+LITELLM_FALLBACK_FAST_INPUT_COST_PER_TOKEN=
+LITELLM_FALLBACK_FAST_OUTPUT_COST_PER_TOKEN=
+```
+
+每个 input/output 价格必须成对配置。部署时 renderer 会把这些值写成 YAML 数字而不是字符串；如果预算已启用，健康检查还会调用 LiteLLM `/v1/model/info`，要求 primary/fallback 四个模型组都解析出大于 0 的输入与输出单价，否则部署失败。这样不会出现“预算看似开启，但未知模型被当作 0 成本所以永远不会触发”的静默失效。
 
 ## 当前最小 CI/CD 链路
 
@@ -113,10 +148,20 @@ LiteLLM / Langfuse 至少配置：
 
 ```text
 LITELLM_MASTER_KEY=<Aegora 调用 LiteLLM 的内部 Key>
-LITELLM_UPSTREAM_API_KEY=<真实模型 Provider Key>
-LITELLM_UPSTREAM_BASE_URL=<Provider OpenAI-compatible base URL>
-LITELLM_UPSTREAM_CHAT_MODEL=openai/<provider-model>
-LITELLM_UPSTREAM_FAST_MODEL=openai/<provider-model>
+LITELLM_UPSTREAM_API_KEY=<Primary Provider Key>
+LITELLM_UPSTREAM_BASE_URL=<Primary Provider OpenAI-compatible base URL>
+LITELLM_UPSTREAM_CHAT_MODEL=openai/<primary-chat-model>
+LITELLM_UPSTREAM_FAST_MODEL=openai/<primary-fast-model>
+LITELLM_FALLBACK_API_KEY=<Fallback Provider Key>
+LITELLM_FALLBACK_BASE_URL=<Fallback Provider OpenAI-compatible base URL>
+LITELLM_FALLBACK_CHAT_MODEL=openai/<fallback-chat-model>
+LITELLM_FALLBACK_FAST_MODEL=openai/<fallback-fast-model>
+
+# Optional hard dollar budget. If set, LITELLM_DATABASE_URL is mandatory.
+# Current Aegora compatibility guard only accepts the verified 30d window.
+LITELLM_MAX_BUDGET_USD=
+LITELLM_BUDGET_DURATION=30d
+LITELLM_DATABASE_URL=
 
 LANGFUSE_TRACING_ENABLED=true
 LANGFUSE_PUBLIC_KEY=pk-lf-...
@@ -172,7 +217,7 @@ Workflow 使用当前 Job 的短生命周期 `GITHUB_TOKEN` 登录 GHCR，并显
 4. `image_tag` 留空时使用当前选中 `main` 的 SHA；也可以显式输入目标 SHA。
 5. Workflow 上传最新 compose，拉取三个同版本镜像，启动后检查 Runtime `/healthz`、Backend `/auth/config` 和 Web 首页。
 
-部署还会在启动前校验 `LITELLM_IMAGE` 必须是合法的 `@sha256:` 引用，因此 LiteLLM 与 Aegora 应用镜像都具备明确的回滚坐标：Aegora 使用 Git SHA，LiteLLM 使用 OCI digest。服务健康后，workflow 会从 LiteLLM 容器内部带 Master Key 调用 `/v1/models`，要求 `aegora-chat` 与 `aegora-fast` 两个稳定别名都存在；这个检查不会产生一次真实 completion 的模型费用，却能提前发现“镜像能启动但配置/版本不兼容”的问题。
+部署还会在启动前校验 `LITELLM_IMAGE` 必须是合法的 `@sha256:` 引用，因此 LiteLLM 与 Aegora 应用镜像都具备明确的回滚坐标：Aegora 使用 Git SHA，LiteLLM 使用 OCI digest。随后 workflow 会用这一个 pinned LiteLLM 镜像自身的 Python 执行配置 renderer，生成 `litellm-config.runtime.yaml`；服务器不需要额外安装 Python。服务健康后，workflow 会从 LiteLLM 容器内部带 Master Key 调用 `/v1/models`，要求 primary/fallback 四个 Aegora 模型组都存在；若启用了美元预算，还会通过 `/v1/model/info` 验证四个模型组都具有有效非零价格。所有检查都不发起真实 completion，因此不会为了兼容性探针产生模型费用。
 
 回滚不重新构建：重新运行 `Deploy Staging`，把 `image_tag` 填成上一个稳定 Git SHA 即可。
 

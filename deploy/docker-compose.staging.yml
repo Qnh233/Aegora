@@ -16,7 +16,7 @@ services:
       - .env
     command: ["--config", "/app/config.yaml", "--port", "4000"]
     volumes:
-      - ./litellm-config.yaml:/app/config.yaml:ro
+      - ./litellm-config.runtime.yaml:/app/config.yaml:ro
     ports:
       - "127.0.0.1:4000:4000"
     healthcheck:

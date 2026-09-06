@@ -44,7 +44,7 @@ jobs:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
-          source: deploy/docker-compose.staging.yml,deploy/litellm-config.yaml
+          source: deploy/docker-compose.staging.yml,deploy/litellm-config.yaml,deploy/render_litellm_config.py
           target: /opt/aegora
           strip_components: 1
 
@@ -83,6 +83,22 @@ jobs:
 
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
             export AEGORA_IMAGE_TAG GHCR_OWNER LITELLM_IMAGE
+
+            # Render numeric budget/pricing fields before Compose starts LiteLLM.
+            # The renderer runs inside the exact immutable LiteLLM image selected
+            # for staging, so the host only needs Docker and never needs Python.
+            docker pull "$LITELLM_IMAGE"
+            docker run --rm \
+              --entrypoint python \
+              --env-file .env \
+              -v "$PWD:/work" \
+              "$LITELLM_IMAGE" \
+              /work/render_litellm_config.py \
+              /work/litellm-config.yaml \
+              /work/litellm-config.runtime.yaml
+
+            test -s litellm-config.runtime.yaml
+            docker compose -f docker-compose.staging.yml config >/dev/null
             docker compose -f docker-compose.staging.yml pull
             docker image inspect "$LITELLM_IMAGE" >/dev/null
             docker compose -f docker-compose.staging.yml up -d --remove-orphans
@@ -117,11 +133,45 @@ jobs:
                 payload = json.load(response)
 
             available = {item.get("id") for item in payload.get("data", [])}
-            required = {"aegora-chat", "aegora-fast"}
+            required = {
+                "aegora-chat",
+                "aegora-fast",
+                "aegora-chat-fallback",
+                "aegora-fast-fallback",
+            }
             missing = sorted(required - available)
             if missing:
                 raise SystemExit(f"LiteLLM missing required Aegora aliases: {missing}")
             print("LiteLLM model aliases verified:", ", ".join(sorted(required)))
+
+            if os.environ.get("LITELLM_MAX_BUDGET_USD", "").strip():
+                info_request = urllib.request.Request(
+                    "http://127.0.0.1:4000/v1/model/info",
+                    headers={"Authorization": f"Bearer {os.environ['LITELLM_MASTER_KEY']}"},
+                )
+                with urllib.request.urlopen(info_request, timeout=5) as response:
+                    model_info_payload = json.load(response)
+
+                info_by_name = {
+                    item.get("model_name"): item.get("model_info") or {}
+                    for item in model_info_payload.get("data", [])
+                    if item.get("model_name") in required
+                }
+                invalid_pricing = []
+                for model_name in sorted(required):
+                    info = info_by_name.get(model_name) or {}
+                    input_cost = info.get("input_cost_per_token")
+                    output_cost = info.get("output_cost_per_token")
+                    if not isinstance(input_cost, (int, float)) or input_cost <= 0:
+                        invalid_pricing.append(f"{model_name}.input_cost_per_token={input_cost!r}")
+                    if not isinstance(output_cost, (int, float)) or output_cost <= 0:
+                        invalid_pricing.append(f"{model_name}.output_cost_per_token={output_cost!r}")
+                if invalid_pricing:
+                    raise SystemExit(
+                        "LiteLLM budget is enabled but effective pricing is missing/non-positive: "
+                        + ", ".join(invalid_pricing)
+                    )
+                print("LiteLLM budget pricing verified for all primary/fallback model groups")
             PY
 
             echo "Aegora staging is healthy at image tag: $AEGORA_IMAGE_TAG"
