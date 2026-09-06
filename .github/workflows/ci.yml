@@ -32,6 +32,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r apps/control-plane/backend/requirements.txt -r services/runtime/requirements.txt
 
+      - name: Validate LiteLLM config renderer
+        working-directory: deploy
+        run: python test_render_litellm_config.py
+
       - name: Run control-plane tests
         working-directory: apps/control-plane/backend
         env:

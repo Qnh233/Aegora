@@ -23,3 +23,5 @@ logs/
 *.sqlite
 *.sqlite3
 
+deploy/litellm-config.runtime.yaml
+
