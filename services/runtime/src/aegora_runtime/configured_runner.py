@@ -10,8 +10,8 @@ from aegora_runtime.agent_loop import (
     AgentRequest,
     ToolCall,
     default_self_check,
-    run_agent,
 )
+from aegora_runtime.execution_engine import ensure_trace_id, get_execution_engine
 from aegora_runtime.config import Settings, load_settings
 from aegora_runtime.deepseek import ChatMessage, DeepSeekClient, DeepSeekError
 from aegora_runtime.local_aicoin_tools import build_aicoin_tool_runtime, write_tool_log
@@ -148,6 +148,7 @@ def build_approval_snapshot(
     return {
         "run_id": str(run_metadata.get("gateway_run_id") or run_metadata.get("run_id") or ""),
         "session_id": str(getattr(request, "session_id", "") or ""),
+        "user_id": str(getattr(request, "user_id", "") or ""),
         "trace_id": str(getattr(request, "trace_id", "") or state.get("trace_id") or ""),
         "message": str(getattr(request, "query", "") or ""),
         "history": list(getattr(request, "history", []) or []),
@@ -202,34 +203,45 @@ def run_configured_turn(
     approval_store: ApprovalStore | None = None,
     initial_tool_observations: list[dict[str, Any]] | None = None,
     initial_loop_count: int = 0,
+    execution_engine: str | None = None,
 ) -> dict[str, Any]:
     cfg = settings or load_settings()
+    engine = get_execution_engine(cfg, execution_engine)
+    request = ensure_trace_id(
+        AgentRequest(
+            query=message.strip(),
+            user_id=user_id,
+            session_id=session_id,
+            history=history or [],
+        )
+    )
+    effective_metadata = {
+        **(metadata or {}),
+        "execution_engine": engine.name,
+        "engine_schema_version": engine.schema_version,
+        "engine_thread_id": str(request.trace_id),
+    }
     dependencies = build_configured_dependencies(
         runtime_context,
         cfg,
         approval_store=approval_store,
-        run_metadata=metadata,
+        run_metadata=effective_metadata,
     )
     initial_state: dict[str, Any] = {}
     if initial_tool_observations:
         initial_state["tool_observations"] = initial_tool_observations
     if initial_loop_count:
         initial_state["loop_count"] = initial_loop_count
-    result = run_agent(
-        AgentRequest(
-            query=message.strip(),
-            user_id=user_id,
-            session_id=session_id,
-            history=history or [],
-        ),
+    result = engine.start(
+        request,
         dependencies,
         cfg,
-        loop_mode="planner",
-        enable_pocoflow_db=False,
         initial_state=initial_state,
+        metadata=effective_metadata,
+        runtime_context=runtime_context,
     )
     result["runtime_context"] = summarize_runtime_context(runtime_context)
-    result["request_metadata"] = metadata or {}
+    result["request_metadata"] = effective_metadata
     return result
 
 
@@ -609,6 +621,8 @@ def decide_approval(
         else:
             raise
     if decision.decision == APPROVAL_REJECTED:
+        if approval_execution_engine(record) == "langgraph":
+            return resume_rejected_langgraph_approval(record, store=store, settings=settings)
         return rejected_approval_response(record)
     return resume_approved_approval(record, store=store, settings=settings)
 
@@ -651,32 +665,133 @@ def resume_approved_approval(
     ensure_tool_still_allowed(refreshed_context, tool_id)
 
     cfg = settings or load_settings()
-    deps = build_configured_dependencies(refreshed_context, cfg, approval_store=None, run_metadata=snapshot.get("metadata") or {})
+    snapshot_metadata = snapshot.get("metadata") if isinstance(snapshot.get("metadata"), dict) else {}
+    bypass_deps = build_configured_dependencies(
+        refreshed_context,
+        cfg,
+        approval_store=None,
+        run_metadata=snapshot_metadata,
+    )
     state = build_resume_state(snapshot, refreshed_context)
-    tool_batch = deps.run_tools([call], state) if deps.run_tools else {
+    tool_batch = bypass_deps.run_tools([call], state) if bypass_deps.run_tools else {
         "execution_mode": "sequential",
-        "results": [deps.run_tool(tool_id, call.get("tool_args") or {}, state)],
+        "results": [bypass_deps.run_tool(tool_id, call.get("tool_args") or {}, state)],
     }
     results = tool_batch.get("results") if isinstance(tool_batch.get("results"), list) else [tool_batch]
     approval_obs = approval_observation(record, "approved")
-    observations = list(snapshot.get("tool_observations") or []) + [approval_obs] + results
-    resumed = run_configured_turn(
-        refreshed_context,
-        message=str(snapshot.get("message") or ""),
-        session_id=str(snapshot.get("session_id") or record.get("session_id") or ""),
-        history=snapshot.get("history") if isinstance(snapshot.get("history"), list) else [],
-        settings=cfg,
-        metadata={
-            **(snapshot.get("metadata") if isinstance(snapshot.get("metadata"), dict) else {}),
-            "approval_id": record.get("approval_id"),
-            "approval_decision": "approved",
-        },
-        approval_store=store,
-        initial_tool_observations=observations,
-        initial_loop_count=int(snapshot.get("loop_count") or 0),
-    )
+    if approval_execution_engine(record) == "langgraph":
+        resumed = resume_langgraph_approval(
+            record,
+            refreshed_context=refreshed_context,
+            store=store,
+            settings=cfg,
+            payload={
+                "decision": "approved",
+                "approval_observation": approval_obs,
+                "tool_results": results,
+            },
+        )
+    else:
+        observations = list(snapshot.get("tool_observations") or []) + [approval_obs] + results
+        resumed = run_configured_turn(
+            refreshed_context,
+            message=str(snapshot.get("message") or ""),
+            session_id=str(snapshot.get("session_id") or record.get("session_id") or ""),
+            user_id=str(snapshot.get("user_id") or "") or None,
+            history=snapshot.get("history") if isinstance(snapshot.get("history"), list) else [],
+            settings=cfg,
+            metadata={
+                **snapshot_metadata,
+                "approval_id": record.get("approval_id"),
+                "approval_decision": "approved",
+            },
+            approval_store=store,
+            initial_tool_observations=observations,
+            initial_loop_count=int(snapshot.get("loop_count") or 0),
+            execution_engine="pocoflow",
+        )
     store.mark_executed(str(record["approval_id"]), resumed)
     resumed["approval"] = approval_response({**record, "status": "executed"})
+    return resumed
+
+
+def approval_execution_engine(record: dict[str, Any]) -> str:
+    snapshot = record.get("snapshot") if isinstance(record.get("snapshot"), dict) else {}
+    metadata = snapshot.get("metadata") if isinstance(snapshot.get("metadata"), dict) else {}
+    return str(metadata.get("execution_engine") or "pocoflow")
+
+
+def resume_langgraph_approval(
+    record: dict[str, Any],
+    *,
+    refreshed_context: dict[str, object],
+    store: ApprovalStore,
+    settings: Settings,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    snapshot = record.get("snapshot") if isinstance(record.get("snapshot"), dict) else {}
+    metadata = snapshot.get("metadata") if isinstance(snapshot.get("metadata"), dict) else {}
+    resume_metadata = {
+        **metadata,
+        "approval_id": record.get("approval_id"),
+        "approval_decision": payload.get("decision"),
+    }
+    dependencies = build_configured_dependencies(
+        refreshed_context,
+        settings,
+        approval_store=store,
+        run_metadata=resume_metadata,
+    )
+    request = AgentRequest(
+        query=str(snapshot.get("message") or ""),
+        user_id=str(snapshot.get("user_id") or "") or None,
+        session_id=str(snapshot.get("session_id") or record.get("session_id") or ""),
+        trace_id=str(snapshot.get("trace_id") or record.get("trace_id") or "") or None,
+        history=snapshot.get("history") if isinstance(snapshot.get("history"), list) else [],
+    )
+    engine = get_execution_engine(settings, "langgraph")
+    resumed = engine.resume(
+        thread_id=str(metadata.get("engine_thread_id") or request.trace_id),
+        payload=payload,
+        request=request,
+        dependencies=dependencies,
+        settings=settings,
+        metadata=resume_metadata,
+        runtime_context=refreshed_context,
+    )
+    resumed["runtime_context"] = summarize_runtime_context(refreshed_context)
+    resumed["request_metadata"] = resume_metadata
+    return resumed
+
+
+def resume_rejected_langgraph_approval(
+    record: dict[str, Any],
+    *,
+    store: ApprovalStore,
+    settings: Settings | None = None,
+) -> dict[str, Any]:
+    cfg = settings or load_settings()
+    try:
+        refreshed_context = runtime_context_resolver.resolve_runtime_context(
+            str(record.get("agent_id")),
+            str(record.get("release_id")),
+            str(record.get("actor_id")),
+            str(record.get("channel")),
+        )
+    except Exception:
+        return rejected_approval_response(record)
+    resumed = resume_langgraph_approval(
+        record,
+        refreshed_context=refreshed_context,
+        store=store,
+        settings=cfg,
+        payload={
+            "decision": "rejected",
+            "approval_observation": approval_observation(record, "rejected"),
+            "answer": "审批已拒绝，本次工具调用不会执行。",
+        },
+    )
+    resumed["approval"] = approval_response(record)
     return resumed
 
 
@@ -689,7 +804,7 @@ def build_resume_state(snapshot: dict[str, Any], refreshed_context: dict[str, ob
             "session_id": snapshot.get("session_id"),
             "trace_id": snapshot.get("trace_id"),
             "history": snapshot.get("history") or [],
-            "user_id": None,
+            "user_id": snapshot.get("user_id") or None,
         },
     )()
     return {

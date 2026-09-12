@@ -16,6 +16,20 @@ jobs:
   python-tests:
     name: Python tests
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: aegora
+          POSTGRES_PASSWORD: aegora
+          POSTGRES_DB: aegora_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aegora -d aegora_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v7
 
@@ -48,7 +62,8 @@ jobs:
         env:
           PYTHONPATH: src
           LLM_GATEWAY_API_KEY: test-key
-          # Unit tests must not depend on a live Runtime PostgreSQL audit sink.
+          LANGGRAPH_TEST_DATABASE_URL: postgresql://aegora:aegora@127.0.0.1:5432/aegora_test
+          # Runtime audit remains disabled; PostgreSQL is used only by explicit durability integration tests.
           TOOL_LOG_DB_ENABLED: "false"
         run: pytest -q
 
