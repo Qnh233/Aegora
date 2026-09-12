@@ -179,6 +179,12 @@ description = "审计日志，运行时直接写 PG。"
 [agent]
 loop_mode_env_var = "AGENT_LOOP_MODE"
 default_loop_mode = "planner"
+execution_engine_env_var = "AGENT_EXECUTION_ENGINE"
+default_execution_engine = "pocoflow"
+langgraph_checkpoints_enabled_env_var = "LANGGRAPH_CHECKPOINTS_ENABLED"
+default_langgraph_checkpoints_enabled = false
+langgraph_checkpoint_database_url_env_var = "LANGGRAPH_CHECKPOINT_DATABASE_URL"
+default_langgraph_checkpoint_database_url = ""
 max_iterations_env_var = "AGENT_MAX_ITERATIONS"
 default_max_iterations = 8
 timeout_seconds_env_var = "AGENT_TIMEOUT_SECONDS"

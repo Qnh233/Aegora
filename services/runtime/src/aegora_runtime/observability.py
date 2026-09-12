@@ -100,5 +100,9 @@ def finish_agent_trace(observation: Any | None, output: dict[str, Any]) -> None:
         metadata={
             "intent": str((output.get("intent") or {}).get("category") or ""),
             "tool_call_count": str(len(output.get("tool_observations") or [])),
+            "execution_engine": str(output.get("execution_engine") or ""),
+            "engine_schema_version": str(output.get("engine_schema_version") or ""),
+            "engine_thread_id": str(output.get("engine_thread_id") or ""),
+            "checkpoint_id": str(output.get("checkpoint_id") or ""),
         },
     )

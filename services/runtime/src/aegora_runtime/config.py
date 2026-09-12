@@ -134,6 +134,9 @@ class SkillSettings:
 @dataclass(frozen=True)
 class AgentSettings:
     loop_mode: str
+    execution_engine: str
+    langgraph_checkpoints_enabled: bool
+    langgraph_checkpoint_database_url: str | None
     max_iterations: int
     timeout_seconds: int
     token_budget: int
@@ -409,8 +412,18 @@ def _load_skills(raw: dict[str, Any]) -> SkillSettings:
 
 
 def _load_agent(raw: dict[str, Any]) -> AgentSettings:
+    checkpoint_database_url = _optional_str(
+        os.getenv(str(raw["langgraph_checkpoint_database_url_env_var"]))
+        or raw.get("default_langgraph_checkpoint_database_url")
+    )
     return AgentSettings(
         loop_mode=_env(raw["loop_mode_env_var"], raw["default_loop_mode"]),
+        execution_engine=_env(raw["execution_engine_env_var"], raw["default_execution_engine"]),
+        langgraph_checkpoints_enabled=_env_bool(
+            raw["langgraph_checkpoints_enabled_env_var"],
+            raw["default_langgraph_checkpoints_enabled"],
+        ),
+        langgraph_checkpoint_database_url=checkpoint_database_url,
         max_iterations=_env_int(raw["max_iterations_env_var"], raw["default_max_iterations"]),
         timeout_seconds=_env_int(raw["timeout_seconds_env_var"], raw["default_timeout_seconds"]),
         token_budget=_env_int(raw["token_budget_env_var"], raw["default_token_budget"]),
@@ -514,6 +527,11 @@ def _validate_numeric_ranges(settings: Settings) -> None:
         raise ConfigError("agent.max_parallel_tool_calls 必须大于 0")
     if settings.agent.loop_mode != "planner":
         raise ConfigError("agent.loop_mode 当前仅支持 planner")
+    if settings.agent.execution_engine not in {"pocoflow", "langgraph"}:
+        raise ConfigError("agent.execution_engine 必须是 pocoflow 或 langgraph")
+    if settings.agent.langgraph_checkpoints_enabled and settings.agent.execution_engine == "langgraph":
+        if not settings.agent.langgraph_checkpoint_database_url:
+            raise ConfigError("LangGraph checkpoints 开启时必须配置 LANGGRAPH_CHECKPOINT_DATABASE_URL")
     if settings.database.embedding_dim <= 0:
         raise ConfigError("database.embedding_dim 必须大于 0")
     if settings.embedding.batch_size <= 0:
