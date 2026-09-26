@@ -99,6 +99,29 @@ sequenceDiagram
 
 当前在线 Agent flow 统一使用 `planner`。旧的先分类再检索 router flow 已不再作为运行入口。
 
+## 长期记忆边界（Memory Plane P0/P1）
+
+长期记忆与会话历史、执行 Checkpoint 分离：会话历史仍由 `sessions.py`/Strapi 管理，LangGraph Checkpoint 只保存执行状态；用户长期事实通过独立 `MemoryService -> MemoryProvider` 接口访问。当前首个 Provider 为 `NativePgMemoryProvider`，复用既有 PostgreSQL `user_memories` 表，因此没有把 Runtime Core 绑定到某个外部记忆框架。
+
+```text
+Configured Runner / Local Tool
+           |
+           v
+      MemoryService
+           |
+      MemoryProvider
+           |
+           v
+ NativePgMemoryProvider
+           |
+     user_memories
+```
+
+- `save_user_memory` 保持原有显式写入能力，但改为通过 `MemoryService` 写入，并优先使用请求中的稳定 `user_id`；匿名请求仍退化为 session-owner 身份。
+- 自动 recall 由 `MEMORY_RECALL_ENABLED` 灰度控制，默认关闭；开启后 `load_configured_context()` 会把同一 `user_id` 的长期记忆注入 `memory` 字段，因此可以跨 Session 复用。
+- recall 失败采用 fail-open：Provider 异常时本轮继续执行，只是没有长期记忆；显式写入失败返回失败结果，不改变其他 Runtime 状态。
+- 当前 PG Provider 只做结构化用户级 recall，尚未引入向量排序、TTL、冲突消解或 Agent/tenant 物理分区；这些属于后续 Memory Policy / OpenViking Provider 阶段。
+
 ## Docker / K8s 部署视图
 
 当前仓库有 `Dockerfile` 和 `docker-entrypoint.sh`，未发现 K8s YAML。下面表达的是基于现有 Docker 入口能自然拆出的部署拓扑，不表示仓库已经包含这些 manifests。
@@ -180,13 +203,14 @@ flowchart TD
 | 检索层 | `src/aegora_runtime/retrieval.py`, `src/aegora_runtime/demo_agent.py` | PG 全文检索、pgvector 检索、RRF 融合、Embedding 降级 |
 | 工具层 | `src/aegora_runtime/registry.py`, `src/aegora_runtime/local_aicoin_tools.py`, `src/aegora_runtime/tools.py` | 工具注册、参数校验、并行/串行执行、工具日志 |
 | 会话层 | `src/aegora_runtime/sessions.py`, `src/aegora_runtime/strapi.py` | 会话续读、消息保存、反馈保存；内容走 Strapi API |
+| 记忆层 | `src/aegora_runtime/memory/` | 长期记忆统一接口、Provider 适配、fail-open recall；与 ExecutionEngine 解耦 |
 | 数据层 | `src/aegora_runtime/db.py`, `scripts/db_migrate.py` | PG 连接、schema、pgvector、中文全文检索函数 |
 | 离线任务 | `scripts/sync_strapi_content.py`, `scripts/embed_faqs.py`, `scripts/eval_*.py` | 内容同步、向量生成、检索/回答质量评估 |
 
 ## 关键边界
 
 - FAQ 和 Skill 源内容由 Strapi 管理；运行时检索副本和向量在 PostgreSQL/pgvector。
-- 会话、消息、反馈通过 Strapi 保存；并发会话锁、工具日志、审计日志、记忆写 PostgreSQL。
+- 会话、消息、反馈通过 Strapi 保存；并发会话锁、工具日志、审计日志、长期记忆写 PostgreSQL。长期记忆通过 `MemoryProvider` 访问，不能与 LangGraph Checkpoint 混为一层。
 - `planner` 让模型通过已注入工具自行检索；请求侧不携带工具权限事实。
 - Embedding API 不可用时，FAQ 检索可降级为全文检索；Skill 自动召回会跳过。
 - 工具只有全部只读且 `parallel_safe` 时才批量并行，写工具混入时串行执行。

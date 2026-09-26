@@ -132,6 +132,14 @@ class SkillSettings:
 
 
 @dataclass(frozen=True)
+class MemorySettings:
+    recall_enabled: bool
+    provider: str
+    recall_limit: int
+    max_item_chars: int
+
+
+@dataclass(frozen=True)
 class AgentSettings:
     loop_mode: str
     execution_engine: str
@@ -196,6 +204,7 @@ class Settings:
     embedding: EmbeddingSettings
     retrieval: RetrievalSettings
     skills: SkillSettings
+    memory: MemorySettings
     database: DatabaseSettings
     collections: dict[str, CollectionSettings]
     agent: AgentSettings
@@ -247,6 +256,7 @@ def load_settings(
         embedding=_load_embedding(raw["embedding"]),
         retrieval=_load_retrieval(raw["retrieval"]),
         skills=_load_skills(raw["skills"]),
+        memory=_load_memory(raw.get("memory", {})),
         database=_load_database(raw["database"]),
         collections=_load_collections(raw.get("collections", {})),
         agent=_load_agent(raw["agent"]),
@@ -411,6 +421,21 @@ def _load_skills(raw: dict[str, Any]) -> SkillSettings:
     )
 
 
+def _load_memory(raw: dict[str, Any]) -> MemorySettings:
+    return MemorySettings(
+        recall_enabled=_env_bool(
+            str(raw.get("recall_enabled_env_var", "MEMORY_RECALL_ENABLED")),
+            bool(raw.get("default_recall_enabled", False)),
+        ),
+        provider=_env(str(raw.get("provider_env_var", "MEMORY_PROVIDER")), str(raw.get("default_provider", "native_pg"))),
+        recall_limit=_env_int(str(raw.get("recall_limit_env_var", "MEMORY_RECALL_LIMIT")), int(raw.get("default_recall_limit", 8))),
+        max_item_chars=_env_int(
+            str(raw.get("max_item_chars_env_var", "MEMORY_MAX_ITEM_CHARS")),
+            int(raw.get("default_max_item_chars", 400)),
+        ),
+    )
+
+
 def _load_agent(raw: dict[str, Any]) -> AgentSettings:
     checkpoint_database_url = _optional_str(
         os.getenv(str(raw["langgraph_checkpoint_database_url_env_var"]))
@@ -521,6 +546,12 @@ def _validate_numeric_ranges(settings: Settings) -> None:
         raise ConfigError("postgres.connect_timeout_seconds 必须大于 0")
     if settings.postgres.pool_max_size < settings.postgres.pool_min_size:
         raise ConfigError("postgres.pool_max_size 必须大于等于 pool_min_size")
+    if settings.memory.provider not in {"native_pg"}:
+        raise ConfigError("memory.provider 当前仅支持 native_pg")
+    if settings.memory.recall_limit <= 0:
+        raise ConfigError("memory.recall_limit 必须大于 0")
+    if settings.memory.max_item_chars <= 0:
+        raise ConfigError("memory.max_item_chars 必须大于 0")
     if settings.agent.max_iterations <= 0:
         raise ConfigError("agent.max_iterations 必须大于 0")
     if settings.agent.max_parallel_tool_calls <= 0:

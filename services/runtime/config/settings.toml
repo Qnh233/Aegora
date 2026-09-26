@@ -176,6 +176,16 @@ pg_table = "audit_logs"
 runtime = true
 description = "审计日志，运行时直接写 PG。"
 
+[memory]
+recall_enabled_env_var = "MEMORY_RECALL_ENABLED"
+default_recall_enabled = false
+provider_env_var = "MEMORY_PROVIDER"
+default_provider = "native_pg"
+recall_limit_env_var = "MEMORY_RECALL_LIMIT"
+default_recall_limit = 8
+max_item_chars_env_var = "MEMORY_MAX_ITEM_CHARS"
+default_max_item_chars = 400
+
 [agent]
 loop_mode_env_var = "AGENT_LOOP_MODE"
 default_loop_mode = "planner"

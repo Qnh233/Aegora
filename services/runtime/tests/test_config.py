@@ -42,6 +42,10 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(settings.retrieval.rrf_tie_break_source, "vector")
         self.assertEqual(settings.retrieval.candidate_k, 5)
         self.assertTrue(settings.skills.enabled)
+        self.assertFalse(settings.memory.recall_enabled)
+        self.assertEqual(settings.memory.provider, "native_pg")
+        self.assertEqual(settings.memory.recall_limit, 8)
+        self.assertEqual(settings.memory.max_item_chars, 400)
         self.assertEqual(settings.skills.max_injected, 1)
         self.assertEqual(settings.skills.max_content_chars, 1000)
         self.assertEqual(settings.database.embedding_dim, 1024)
@@ -88,6 +92,10 @@ class ConfigTest(unittest.TestCase):
             "AGENT_LOOP_MODE": "planner",
             "AGENT_ENABLE_LLM_SELF_CHECK": "true",
             "AGENT_MAX_PARALLEL_TOOL_CALLS": "2",
+            "MEMORY_RECALL_ENABLED": "true",
+            "MEMORY_PROVIDER": "native_pg",
+            "MEMORY_RECALL_LIMIT": "5",
+            "MEMORY_MAX_ITEM_CHARS": "240",
             "POCOFLOW_DB_ENABLED": "false",
             "FILE_LOG_ENABLED": "false",
             "TOOL_LOG_DB_ENABLED": "false",
@@ -118,6 +126,10 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(settings.agent.loop_mode, "planner")
         self.assertTrue(settings.agent.enable_llm_self_check)
         self.assertEqual(settings.agent.max_parallel_tool_calls, 2)
+        self.assertTrue(settings.memory.recall_enabled)
+        self.assertEqual(settings.memory.provider, "native_pg")
+        self.assertEqual(settings.memory.recall_limit, 5)
+        self.assertEqual(settings.memory.max_item_chars, 240)
         self.assertFalse(settings.observability.pocoflow_db_enabled)
         self.assertFalse(settings.observability.file_log_enabled)
         self.assertFalse(settings.observability.tool_log_db_enabled)
