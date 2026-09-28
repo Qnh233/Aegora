@@ -8,7 +8,7 @@
 
 **Enterprise Agent Control Plane & Stateless Runtime**
 
-Aegora is an enterprise-oriented platform for registering, governing, composing and operating AI agents, MCP tools, workflows and organizational skills. The repository is organized as a monorepo while keeping the control plane and data plane independently deployable.
+Aegora is an enterprise-oriented platform for registering, governing, composing and operating AI agents, MCP tools, workflows, long-term memory and organizational skills. A configuration-driven stateless Runtime provides the execution substrate, while pluggable ExecutionEngine and MemoryProvider interfaces keep execution/memory implementations replaceable and leave authorization, memory policy, Skill promotion and auditability under platform governance. The repository is organized as a monorepo while keeping the control plane and data plane independently deployable.
 
 ## Architecture
 
@@ -16,7 +16,7 @@ The diagram below describes the **target production topology**. PostgreSQL remai
 
 ```text
                            Aegora Control Plane
-                   Agent / Release / RBAC / Registry
+          Agent / Release / RBAC / MCP / Memory Policy / Skill Governance
                                   |
                                   v
                             PostgreSQL
@@ -32,19 +32,19 @@ The diagram below describes the **target production topology**. PostgreSQL remai
                Runtime Pod 1 Runtime Pod 2 Runtime Pod 3
                  L1 Cache      L1 Cache      L1 Cache
                  MCP Pool      MCP Pool      MCP Pool
+              ExecutionEngine ExecutionEngine ExecutionEngine
+               MemoryService  MemoryService  MemoryService
                     |             |             |
-                    +-------------+-------------+
-                                  |
-                                  v
-                            LiteLLM Proxy
-                                  |
-                       Router / Retry / Fallback
-                                  |
-                                  v
-                           Model Providers
-                                  |
-                                  v
-                         Prompt / KV Cache
+                    +------+------+-+-----------+
+                           |        |
+                           v        v
+                       LiteLLM   MemoryProvider
+                         Proxy    Native PG / OpenViking
+                           |
+                  Router / Retry / Fallback
+                           |
+                           v
+                    Model Providers
 ```
 
 ### Runtime and cache hierarchy
@@ -69,38 +69,77 @@ The intended configuration path is **PostgreSQL -> Redis L2 -> Runtime L1**. Pub
 - **Dynamic authorization**: every run intersects release capabilities with current actor permissions, tool status and MCP connection state.
 - **Capability-oriented integration**: MCP is the primary tool integration protocol; complex SOP/workflows are exposed as governed capabilities rather than leaking low-level APIs to the model.
 - **Centralized configuration**: both applications read the repository-root `.env` by default; real secrets must never be committed.
+- **Memory remains platform-governed**: providers handle storage/retrieval; Aegora decides what may be remembered, who may read/share it, when it expires, and whether experience may be promoted into a Skill.
+
+## Governed Memory Plane
+
+Aegora deliberately separates **conversation history, execution checkpoints, long-term memory and publishable Skills** instead of treating them as one generic “memory” layer:
+
+```text
+Conversation History        current conversational context
+        |
+        +--> Checkpoint      LangGraph / HITL / resume
+        |
+        +--> MemoryService
+               |
+          MemoryProvider
+          /            \
+     Native PG      OpenViking
+          |
+   Governance / Policy
+          |
+   Episodic / Semantic
+          |
+   Procedural Memory
+          |
+      Governed Skill
+```
+
+The P0–P6 Memory Plane currently includes:
+
+- **Pluggable providers**: `MEMORY_PROVIDER=native_pg|openviking`. Native PostgreSQL remains the default; OpenViking is an independent HTTP memory backend rather than a Runtime Core dependency.
+- **Multi-Agent / multi-tenant scopes**: `user_global`, `user_agent`, and `tenant_user`, governed by `tenant_required`, `user_controlled`, or `agent_private` namespace policies with stricter public-Agent access.
+- **Governance before retrieval**: Release/user/tenant policy defines visibility; providers return candidates, then Aegora filters, reranks and budgets context before injection.
+- **Background extraction**: explicit, stable, reusable user facts first become `memory_candidates`; sensitive/inferred/conflicting or insufficiently trusted candidates are blocked or sent to review instead of becoming facts directly from an LLM.
+- **Versioning / conflict / forget / expiry**: long-term memory keeps provenance, replacement versions, explicit forget, TTL/expiry and a `memory_events` audit trail; ordinary automatic memory cannot overwrite tenant-managed facts.
+- **OpenViking adapter**: trusted identity headers map tenant/user/agent identity, while the adapter handles `viking://~` canonicalization, built-in memory-type paths and overview/abstract documents.
+- **Unified Memory Eval**: the same corpus can run against different providers and tracks recall, distractor rejection, privacy isolation, update/forget behavior, candidate decisions and context budget.
+
+P5 validated migration idempotency plus the Native PG create → update → recall → forget → expiry → audit lifecycle on isolated WSL PostgreSQL + pgvector. OpenViking v0.4.21 also completed a real HTTP/storage/search integration run. Its current evaluation used a test embedding service to validate provider and isolation semantics, so it is **not presented as a production semantic-retrieval benchmark**. See [`services/runtime/docs/architecture.md`](./services/runtime/docs/architecture.md) for the detailed boundaries and evidence.
 
 ## Governed data flywheel
 
 Aegora treats runtime experience as **candidate improvement material**, not as permission for an Agent to silently rewrite itself. The target loop is:
 
 ```text
-Production Runs / Traces / Human Feedback
-                  |
-                  v
-      Evaluation + Failure Mining
-                  |
-                  v
-   Reflection / Skill Draft / Proposal
-                  |
-                  v
- Policy Gate + Human Review + Audit Trail
-                  |
-          +-------+--------+
-          |                |
-          v                v
-   Versioned Skill     Agent/Prompt Change
-          |                |
-          +-------+--------+
-                  |
-                  v
-        Offline / Canary Evaluation
-                  |
-                  v
-        Publish New Version
-                  |
-                  v
-           New Production Runs
+Production Runs / Traces / Memory Evidence / Human Feedback
+                             |
+                             v
+                      Weekly Reflection
+                             |
+               repeated success + feedback
+                             |
+                             v
+                     Procedural Memory
+                             |
+                   Deterministic Gate
+                             |
+                             v
+                        Skill Draft
+                             |
+                  Offline Eval / Regression
+                             |
+                             v
+                     Canary / Shadow
+                             |
+                             v
+                      Human Reviewer
+                             |
+                             v
+                        Active Skill
+                             |
+                             v
+                    New Production Runs
 ```
 
 ### Flywheel guardrails
@@ -112,7 +151,7 @@ Production Runs / Traces / Human Feedback
 - **Full lineage**: retain source run/evidence, evaluator result, proposal, reviewer/policy decision and resulting version for auditability.
 - **No authorization expansion through learning**: learned Skills/prompts cannot grant tools or scopes beyond the published release ceiling and current runtime authorization intersection.
 
-The current codebase already contains the main foundations for this design: immutable releases, runtime policy resolution, governance/audit boundaries, Skills, the reflection/Skill-draft path, a central LiteLLM gateway integration and Langfuse trace correlation. The Redis integration candidate adds bounded Runtime L1 + versioned Redis L2 plus a v1 publish/revoke/tool-policy event contract with a best-effort Control Plane publisher and Runtime subscriber, while mutable authorization/governance facts remain PostgreSQL reads. The governed-learning integration adds Agent/Release lineage and immutable Release-scoped learning-policy snapshots to reflection evidence; reflection never clusters evidence across Agents, evidence capture can be disabled per Agent, and Skill proposal generation is explicit opt-in. `source=agent` Skills are blocked from promotion unless they carry evaluation evidence bound to the exact candidate content hash, explicit criteria, a passed regression comparison, a passed Canary record with declared rollout mode/non-zero sample size/metrics/observation time, and an explicit human reviewer. The gate is enforced for both local promotion and Strapi-to-PostgreSQL sync. Producing Canary evidence from real bounded traffic and the remaining end-to-end flywheel automation remain roadmap work.
+The current codebase now carries this loop through **Memory → Reflection → Procedural Memory → Governed Skill**. Reflection only groups evidence for the same Agent when its learning policy allows capture. By default, a promotable procedural pattern requires at least three independent traces, two positive-feedback traces, successful Assistant-response evidence, and no negative-feedback conflict beyond policy thresholds. Candidates are deduplicated by `agent_id + fingerprint` and retain `source_trace_ids / positive_trace_ids / source_memory_candidate_ids` lineage. Passing the procedural gate still creates only a `draft` Skill; publishing requires content-bound Offline Eval, Regression, Canary/Shadow evidence and an explicit human reviewer. If later evidence turns a drafted procedural memory into `conflicted`, the Strapi-to-PostgreSQL active sync rechecks the live procedural state and blocks publication. Automatic procedural learning is disabled by default. Producing Canary evidence from real bounded traffic remains roadmap work.
 
 ## Repository layout
 
@@ -191,5 +230,6 @@ Planned next steps:
 1. Workflow Capability now includes governance editing plus the first version/lifecycle slice: administrators can register MCP-backed governed workflows, Runtime preserves `source=workflow`, and the console edits Input Schema, scope allow-lists and scope descriptions. Publishing now records an immutable `workflow_id + version` fact, allows only one `active` version per workflow, retires the previous active version when a new one is published, and projects the selected version into the `tools` runtime view; admin APIs can list history and retire a version. Next, add frontend history/retirement management and richer draft/canary lifecycle states.
 2. Harden the LiteLLM/Langfuse production path: staging now requires an explicitly tested immutable LiteLLM image digest; next add multi-provider fallback policies, budgets and trace/evaluation dashboards.
 3. Redis cache phase 1/2 plus the first event-fabric slice is included in this integration candidate: Runtime caches only immutable Release `config_json` with bounded process-local L1 + versioned Redis L2; Control Plane emits versioned publish/revoke/tool-policy events and Runtime consumes them, evicting exact release-version cache entries when relevant. Runtime Prometheus metrics expose applied/ignored/invalid event counts, event lag, and subscriber reconnect failures; the Control Plane keeps low-cardinality publisher success/failure/disabled counters behind an admin-only operational endpoint. Release status, RBAC, tool state and MCP connection state remain live PostgreSQL reads. Next, add tool-session convergence only where a real stale-session risk is demonstrated.
-4. Governed learning phase 1 is included in this integration candidate: Agent/Release lineage, Release-scoped learning-policy snapshots, opt-in Skill proposals, content-bound offline evaluation evidence, regression comparison, Canary evidence requirements and human-review promotion gates are enforced across local promotion and Strapi sync. Next, generate Canary evidence from real bounded shadow/limited traffic and close the remaining automated flywheel loop.
+4. Governed learning now includes the P6 path: Memory Evidence → Reflection → Procedural Memory → Skill Draft → Eval/Regression → Canary → Human Review → Active Skill, with deduplication, negative-feedback conflicts, live procedural-state rechecks and full lineage. Next, generate Canary evidence from real bounded shadow/limited traffic and expand evaluation on real multi-turn datasets.
+5. Native PG remains the default Memory Provider while OpenViking stays a pluggable experimental provider. Next, run same-corpus A/B with a real embedding model and, where multi-replica deployment is required, validate shared storage/indexing, HA and capacity boundaries instead of treating “multiple Pods can start” as proof of mature clustering.
 
