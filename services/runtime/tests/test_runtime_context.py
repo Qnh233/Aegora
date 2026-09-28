@@ -381,6 +381,96 @@ def test_fetch_agent_release_uses_cached_static_config_but_reads_current_status(
     assert "config_json" not in queries[0][0]
 
 
+def test_fetch_memory_governance_reads_control_plane_policy_and_user_consent(monkeypatch) -> None:
+    calls = []
+
+    class FakeCursor:
+        def __init__(self):
+            self.step = 0
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def execute(self, query, params=None):
+            calls.append((query, params))
+
+        def fetchone(self):
+            return {
+                "policies_table": "memory_namespace_policies",
+                "preferences_table": "user_memory_preferences",
+            }
+
+        def fetchall(self):
+            self.step += 1
+            if self.step == 1:
+                return [
+                    {
+                        "namespace": "org_profile",
+                        "mode": "tenant_required",
+                        "allow_public_agents": True,
+                    },
+                    {
+                        "namespace": "preferences",
+                        "mode": "user_controlled",
+                        "allow_public_agents": False,
+                    },
+                ]
+            return [
+                {
+                    "namespace": "preferences",
+                    "share_across_agents": True,
+                }
+            ]
+
+    class FakeConn:
+        def cursor(self):
+            return FakeCursor()
+
+    @contextmanager
+    def fake_connect_agent_platform():
+        yield FakeConn()
+
+    monkeypatch.setattr(runtime_context, "connect_agent_platform", fake_connect_agent_platform)
+    monkeypatch.setenv("AEGORA_TENANT_ID", "tenant-a")
+
+    governance = runtime_context.fetch_memory_governance(
+        "u_1",
+        agent_visibility="private",
+    )
+
+    assert governance["tenant_id"] == "tenant-a"
+    assert governance["namespace_policies"]["org_profile"] == {
+        "mode": "tenant_required",
+        "allow_public_agents": True,
+    }
+    assert governance["user_preferences"] == {"preferences": True}
+    assert governance["policy_available"] is True
+    assert calls[1][1] == ("tenant-a",)
+    assert calls[2][1] == ("tenant-a", "u_1")
+
+
+def test_fetch_memory_governance_fails_closed(monkeypatch) -> None:
+    @contextmanager
+    def failing_connect():
+        raise RuntimeError("control plane unavailable")
+        yield
+
+    monkeypatch.setattr(runtime_context, "connect_agent_platform", failing_connect)
+
+    governance = runtime_context.fetch_memory_governance(
+        "u_1",
+        agent_visibility="public",
+    )
+
+    assert governance["namespace_policies"] == {}
+    assert governance["user_preferences"] == {}
+    assert governance["agent_visibility"] == "public"
+    assert governance["policy_available"] is False
+
+
 def test_validate_runtime_context_allows_public_release_for_active_non_owner(monkeypatch) -> None:
     monkeypatch.setattr(runtime_context, "active_tool_ids", lambda tool_ids: tool_ids)
     monkeypatch.setattr(runtime_context, "get_user_role_tool_scopes", lambda _: {"calculator": {}, "time_now": {}})

@@ -275,6 +275,271 @@ def apply_schema(conn, text_config: str) -> None:
 
         cur.execute(
             """
+            CREATE TABLE IF NOT EXISTS memory_items (
+                id bigserial PRIMARY KEY,
+                tenant_id text NOT NULL DEFAULT 'default',
+                subject_user_id text NOT NULL,
+                scope text NOT NULL,
+                namespace text NOT NULL,
+                agent_id text,
+                memory_type text NOT NULL DEFAULT 'semantic',
+                memory_key text NOT NULL,
+                content text NOT NULL,
+                source_agent_id text,
+                source_session_id text,
+                source_trace_id text,
+                source_kind text NOT NULL DEFAULT 'legacy',
+                confidence real NOT NULL DEFAULT 1.0,
+                importance real NOT NULL DEFAULT 0.5,
+                status text NOT NULL DEFAULT 'active',
+                version integer NOT NULL DEFAULT 1,
+                supersedes_id bigint REFERENCES memory_items(id),
+                valid_from timestamptz NOT NULL DEFAULT now(),
+                valid_until timestamptz,
+                created_at timestamptz NOT NULL DEFAULT now(),
+                updated_at timestamptz NOT NULL DEFAULT now(),
+                CHECK (scope IN ('user_global', 'user_agent', 'tenant_user')),
+                CHECK (memory_type IN ('semantic', 'episodic', 'procedural_candidate', 'profile', 'summary')),
+                CHECK (status IN ('active', 'superseded', 'deleted', 'expired')),
+                CHECK (source_kind IN ('explicit', 'automatic', 'tenant', 'legacy')),
+                CHECK (confidence BETWEEN 0 AND 1),
+                CHECK (importance BETWEEN 0 AND 1),
+                CHECK (version > 0),
+                CHECK (scope <> 'user_agent' OR agent_id IS NOT NULL)
+            )
+            """
+        )
+        cur.execute("ALTER TABLE memory_items ADD COLUMN IF NOT EXISTS source_kind text NOT NULL DEFAULT 'legacy'")
+        cur.execute("ALTER TABLE memory_items DROP CONSTRAINT IF EXISTS memory_items_status_check")
+        cur.execute(
+            """
+            ALTER TABLE memory_items
+            ADD CONSTRAINT memory_items_status_check
+            CHECK (status IN ('active', 'superseded', 'deleted', 'expired'))
+            """
+        )
+        cur.execute("ALTER TABLE memory_items DROP CONSTRAINT IF EXISTS memory_items_source_kind_check")
+        cur.execute(
+            """
+            ALTER TABLE memory_items
+            ADD CONSTRAINT memory_items_source_kind_check
+            CHECK (source_kind IN ('explicit', 'automatic', 'tenant', 'legacy'))
+            """
+        )
+        cur.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_memory_items_active_identity
+            ON memory_items (
+                tenant_id,
+                subject_user_id,
+                scope,
+                namespace,
+                COALESCE(agent_id, ''),
+                memory_key
+            )
+            WHERE status = 'active'
+            """
+        )
+        cur.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_memory_items_recall
+            ON memory_items (tenant_id, subject_user_id, status, namespace, scope, updated_at DESC)
+            """
+        )
+        cur.execute(
+            """
+            INSERT INTO memory_items (
+                tenant_id,
+                subject_user_id,
+                scope,
+                namespace,
+                memory_type,
+                memory_key,
+                content,
+                source_agent_id,
+                source_session_id,
+                source_kind,
+                confidence,
+                importance,
+                status,
+                version
+            )
+            SELECT
+                'default',
+                user_memories.user_id,
+                'user_global',
+                'preferences',
+                'semantic',
+                legacy.key,
+                legacy.value,
+                'legacy',
+                NULL,
+                'legacy',
+                1.0,
+                0.5,
+                'active',
+                1
+            FROM user_memories
+            CROSS JOIN LATERAL jsonb_each_text(user_memories.facts) AS legacy(key, value)
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM memory_items existing
+                WHERE existing.tenant_id = 'default'
+                  AND existing.subject_user_id = user_memories.user_id
+                  AND existing.scope = 'user_global'
+                  AND existing.namespace = 'preferences'
+                  AND existing.agent_id IS NULL
+                  AND existing.memory_key = legacy.key
+                  AND existing.status = 'active'
+            )
+            """
+        )
+
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS memory_candidates (
+                id bigserial PRIMARY KEY,
+                tenant_id text NOT NULL DEFAULT 'default',
+                subject_user_id text NOT NULL,
+                namespace text NOT NULL,
+                proposed_scope text NOT NULL,
+                agent_id text,
+                operation text NOT NULL,
+                memory_type text NOT NULL DEFAULT 'semantic',
+                memory_key text NOT NULL,
+                content text,
+                evidence_type text NOT NULL,
+                update_intent boolean NOT NULL DEFAULT false,
+                source_agent_id text,
+                source_session_id text,
+                source_trace_id text,
+                confidence real NOT NULL DEFAULT 0,
+                importance real NOT NULL DEFAULT 0.5,
+                ttl_days integer,
+                rationale text,
+                status text NOT NULL DEFAULT 'pending',
+                decision_reason text,
+                created_at timestamptz NOT NULL DEFAULT now(),
+                decided_at timestamptz,
+                applied_memory_id bigint REFERENCES memory_items(id),
+                CHECK (proposed_scope IN ('user_global', 'user_agent', 'tenant_user')),
+                CHECK (operation IN ('upsert', 'forget')),
+                CHECK (memory_type IN ('semantic', 'episodic', 'profile', 'summary')),
+                CHECK (evidence_type IN ('explicit_fact', 'explicit_instruction', 'inferred')),
+                CHECK (status IN ('pending', 'needs_review', 'rejected', 'applied', 'skipped')),
+                CHECK (confidence BETWEEN 0 AND 1),
+                CHECK (importance BETWEEN 0 AND 1),
+                CHECK (ttl_days IS NULL OR ttl_days BETWEEN 1 AND 365)
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_memory_candidates_source_identity
+            ON memory_candidates (
+                tenant_id,
+                subject_user_id,
+                COALESCE(source_trace_id, ''),
+                namespace,
+                memory_key,
+                operation
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_memory_candidates_status
+            ON memory_candidates (status, created_at DESC)
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS memory_extraction_messages (
+                trace_id text PRIMARY KEY,
+                user_id text NOT NULL,
+                session_id text,
+                agent_id text,
+                status text NOT NULL,
+                candidate_count integer NOT NULL DEFAULT 0,
+                attempt_count integer NOT NULL DEFAULT 1,
+                model text,
+                error text,
+                processed_at timestamptz,
+                created_at timestamptz NOT NULL DEFAULT now(),
+                updated_at timestamptz NOT NULL DEFAULT now(),
+                CHECK (status IN ('completed', 'failed'))
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS memory_events (
+                id bigserial PRIMARY KEY,
+                tenant_id text NOT NULL DEFAULT 'default',
+                subject_user_id text NOT NULL,
+                namespace text NOT NULL,
+                memory_key text NOT NULL,
+                memory_id bigint,
+                candidate_id bigint,
+                event_type text NOT NULL,
+                source_kind text,
+                source_agent_id text,
+                source_session_id text,
+                source_trace_id text,
+                reason text,
+                detail jsonb NOT NULL DEFAULT '{}'::jsonb,
+                created_at timestamptz NOT NULL DEFAULT now()
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_memory_events_subject
+            ON memory_events (tenant_id, subject_user_id, created_at DESC)
+            """
+        )
+
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS procedural_memories (
+                id bigserial PRIMARY KEY,
+                agent_id text NOT NULL,
+                fingerprint text NOT NULL,
+                cluster_key text NOT NULL,
+                title text NOT NULL,
+                status text NOT NULL DEFAULT 'candidate',
+                promotion_reason text,
+                evidence_count integer NOT NULL DEFAULT 0,
+                positive_count integer NOT NULL DEFAULT 0,
+                negative_count integer NOT NULL DEFAULT 0,
+                negative_ratio real NOT NULL DEFAULT 0,
+                source_trace_ids jsonb NOT NULL DEFAULT '[]'::jsonb,
+                positive_trace_ids jsonb NOT NULL DEFAULT '[]'::jsonb,
+                source_memory_candidate_ids jsonb NOT NULL DEFAULT '[]'::jsonb,
+                examples jsonb NOT NULL DEFAULT '[]'::jsonb,
+                strategy_examples jsonb NOT NULL DEFAULT '[]'::jsonb,
+                promoted_skill_name text,
+                skill_draft_id text,
+                created_at timestamptz NOT NULL DEFAULT now(),
+                updated_at timestamptz NOT NULL DEFAULT now(),
+                UNIQUE (agent_id, fingerprint),
+                CHECK (status IN ('candidate', 'blocked', 'conflicted', 'skill_drafted', 'rejected')),
+                CHECK (evidence_count >= 0),
+                CHECK (positive_count >= 0),
+                CHECK (negative_count >= 0),
+                CHECK (negative_ratio BETWEEN 0 AND 1)
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_procedural_memories_agent_status
+            ON procedural_memories (agent_id, status, updated_at DESC)
+            """
+        )
+
+        cur.execute(
+            """
             CREATE TABLE IF NOT EXISTS tool_logs (
                 id bigserial PRIMARY KEY,
                 trace_id text NOT NULL,

@@ -171,6 +171,71 @@ def test_configured_context_loads_session_and_session_user_views(monkeypatch) ->
     assert context["session_user_context"][0]["message_key"] == "m1"
 
 
+def test_configured_context_injects_long_term_memory(monkeypatch) -> None:
+    class FakeMemoryService:
+        def recall(self, *, scope, query, governance=None):
+            assert scope.user_id == "u-1"
+            assert scope.session_id == "session-new"
+            assert scope.agent_id == "agent_1"
+            assert query == "帮我写代码"
+            from aegora_runtime.memory import MemoryItem
+
+            return [
+                MemoryItem(
+                    memory_id="semantic:u-1:preferred_language",
+                    memory_type="semantic",
+                    key="preferred_language",
+                    content="Python",
+                )
+            ]
+
+    monkeypatch.setattr(
+        "aegora_runtime.configured_runner.skill_index_for_scope",
+        lambda scope, settings: [],
+    )
+    monkeypatch.setattr(
+        "aegora_runtime.configured_runner.load_session_context_views",
+        lambda settings, session_id, user_id, session_limit=8, user_limit=8: {
+            "session_context": [],
+            "session_user_context": [],
+        },
+    )
+    monkeypatch.setattr(
+        "aegora_runtime.configured_runner.build_memory_service",
+        lambda settings: FakeMemoryService(),
+    )
+
+    context = load_configured_context(
+        type(
+            "Req",
+            (),
+            {
+                "history": [],
+                "session_id": "session-new",
+                "user_id": "u-1",
+                "query": "帮我写代码",
+            },
+        )(),
+        runtime_context_fixture(),
+        load_settings(env_path=None),
+    )
+
+    assert context["memory"] == [
+        {
+            "id": "semantic:u-1:preferred_language",
+            "type": "semantic",
+            "key": "preferred_language",
+            "content": "Python",
+            "scope": "user_global",
+            "namespace": "preferences",
+            "version": 1,
+            "source_agent_id": None,
+            "source_kind": "legacy",
+            "metadata": {},
+        }
+    ]
+
+
 def test_build_configured_messages_includes_classified_short_term_context() -> None:
     messages = build_configured_messages(
         {
@@ -189,6 +254,7 @@ def test_build_configured_messages_includes_classified_short_term_context() -> N
     payload = json.loads(messages[-1].content)
     assert payload["session_context"][0]["message_key"] == "m2"
     assert payload["session_user_context"][0]["message_key"] == "m1"
+    assert payload["memory"] == []
 
 
 def test_build_configured_messages_reuses_release_prompt_artifact_without_caching_dynamic_context(monkeypatch) -> None:

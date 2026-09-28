@@ -15,6 +15,7 @@ from aegora_runtime.execution_engine import ensure_trace_id, get_execution_engin
 from aegora_runtime.config import Settings, load_settings
 from aegora_runtime.deepseek import ChatMessage, DeepSeekClient, DeepSeekError
 from aegora_runtime.local_aicoin_tools import build_aicoin_tool_runtime, write_tool_log
+from aegora_runtime.memory import MemoryScope, build_memory_service, governance_from_runtime_context
 from aegora_runtime.real_agent import LazyBgeM3Encoder, search_faq_tool
 from aegora_runtime.runtime_cache import get_runtime_config_cache
 from aegora_runtime.runtime_approvals import (
@@ -40,7 +41,8 @@ CONFIGURED_PROTOCOL = """你是配置驱动 Runner Core。只输出 JSON 对象�
 2. 只能调用 available_tools 中列出的工具，tool_name 必须等于其中的 name。
 3. 工具结果是事实边界；没有工具或证据时不要编造外部事实。
 4. route=tool_call 时输出 tool_name/tool_args，或 tool_calls 数组；其他终态必须输出非空 answer。
-5. 工具未列出、参数不确定或权限不足时，不要尝试绕过，直接回答无法执行或澄清。"""
+5. 工具未列出、参数不确定或权限不足时，不要尝试绕过，直接回答无法执行或澄清。
+6. memory 是用户长期上下文，可能过期；当前用户输入和工具事实与 memory 冲突时，以当前输入和工具事实为准。"""
 CONFIGURED_PROMPT_ARTIFACT_VERSION = "v1-" + hashlib.sha256(CONFIGURED_PROTOCOL.encode("utf-8")).hexdigest()[:16]
 
 
@@ -313,10 +315,33 @@ def load_configured_context(
     except Exception:
         # 短期上下文读取失败时降级为空，避免历史存储问题阻断整轮执行。
         context_views = {"session_context": [], "session_user_context": []}
+
+    memory_items: list[dict[str, Any]] = []
+    user_id = str(getattr(request, "user_id", "") or "").strip()
+    if user_id:
+        agent = runtime_context.get("agent") if isinstance(runtime_context.get("agent"), dict) else {}
+        governance = governance_from_runtime_context(runtime_context)
+        scope = MemoryScope(
+            user_id=user_id,
+            session_id=str(getattr(request, "session_id", "") or "") or None,
+            agent_id=str(agent.get("id")) if agent.get("id") else governance.agent_id,
+            tenant_id=governance.tenant_id,
+            namespace="preferences",
+        )
+        memory_items = [
+            item.to_prompt_dict()
+            for item in build_memory_service(active_settings).recall(
+                scope=scope,
+                query=str(getattr(request, "query", "") or ""),
+                governance=governance,
+            )
+        ]
+
     return {
         "history": request.history[-8:],
         "session_context": context_views["session_context"],
         "session_user_context": context_views["session_user_context"],
+        "memory": memory_items,
         "runtime_context": runtime_context,
         "active_tool_ids": list(runtime_context.get("tool_ids") or []),
         "tool_scopes": runtime_context.get("tool_scopes") or {},
@@ -451,6 +476,7 @@ def build_configured_messages(state: dict[str, Any], runtime_context: dict[str, 
         "history": (state.get("context") or {}).get("history") or [],
         "session_context": (state.get("context") or {}).get("session_context") or [],
         "session_user_context": (state.get("context") or {}).get("session_user_context") or [],
+        "memory": (state.get("context") or {}).get("memory") or [],
         "tool_observations": state.get("tool_observations") or [],
         "available_tools": state.get("tool_catalog") or [],
         "skill_index": (state.get("context") or {}).get("skill_index") or [],

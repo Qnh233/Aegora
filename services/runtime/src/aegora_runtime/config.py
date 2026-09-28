@@ -132,6 +132,23 @@ class SkillSettings:
 
 
 @dataclass(frozen=True)
+class MemorySettings:
+    recall_enabled: bool
+    provider: str
+    recall_limit: int
+    max_item_chars: int
+    extraction_enabled: bool
+    auto_apply_threshold: float
+    forget_threshold: float
+    openviking_base_url: str
+    openviking_api_key: str | None
+    openviking_auth_mode: str
+    openviking_timeout_seconds: int
+    openviking_wait_for_index: bool
+    openviking_root_uri: str
+
+
+@dataclass(frozen=True)
 class AgentSettings:
     loop_mode: str
     execution_engine: str
@@ -196,6 +213,7 @@ class Settings:
     embedding: EmbeddingSettings
     retrieval: RetrievalSettings
     skills: SkillSettings
+    memory: MemorySettings
     database: DatabaseSettings
     collections: dict[str, CollectionSettings]
     agent: AgentSettings
@@ -247,6 +265,7 @@ def load_settings(
         embedding=_load_embedding(raw["embedding"]),
         retrieval=_load_retrieval(raw["retrieval"]),
         skills=_load_skills(raw["skills"]),
+        memory=_load_memory(raw.get("memory", {})),
         database=_load_database(raw["database"]),
         collections=_load_collections(raw.get("collections", {})),
         agent=_load_agent(raw["agent"]),
@@ -411,6 +430,60 @@ def _load_skills(raw: dict[str, Any]) -> SkillSettings:
     )
 
 
+def _load_memory(raw: dict[str, Any]) -> MemorySettings:
+    return MemorySettings(
+        recall_enabled=_env_bool(
+            str(raw.get("recall_enabled_env_var", "MEMORY_RECALL_ENABLED")),
+            bool(raw.get("default_recall_enabled", False)),
+        ),
+        provider=_env(str(raw.get("provider_env_var", "MEMORY_PROVIDER")), str(raw.get("default_provider", "native_pg"))),
+        recall_limit=_env_int(str(raw.get("recall_limit_env_var", "MEMORY_RECALL_LIMIT")), int(raw.get("default_recall_limit", 8))),
+        max_item_chars=_env_int(
+            str(raw.get("max_item_chars_env_var", "MEMORY_MAX_ITEM_CHARS")),
+            int(raw.get("default_max_item_chars", 400)),
+        ),
+        extraction_enabled=_env_bool(
+            str(raw.get("extraction_enabled_env_var", "MEMORY_EXTRACTION_ENABLED")),
+            bool(raw.get("default_extraction_enabled", False)),
+        ),
+        auto_apply_threshold=float(
+            _env(
+                str(raw.get("auto_apply_threshold_env_var", "MEMORY_AUTO_APPLY_THRESHOLD")),
+                str(raw.get("default_auto_apply_threshold", 0.9)),
+            )
+        ),
+        forget_threshold=float(
+            _env(
+                str(raw.get("forget_threshold_env_var", "MEMORY_FORGET_THRESHOLD")),
+                str(raw.get("default_forget_threshold", 0.98)),
+            )
+        ),
+        openviking_base_url=_env(
+            str(raw.get("openviking_base_url_env_var", "OPENVIKING_BASE_URL")),
+            str(raw.get("default_openviking_base_url", "http://127.0.0.1:1933")),
+        ).rstrip("/"),
+        openviking_api_key=_env_optional(
+            str(raw.get("openviking_api_key_env_var", "OPENVIKING_API_KEY"))
+        ),
+        openviking_auth_mode=_env(
+            str(raw.get("openviking_auth_mode_env_var", "OPENVIKING_AUTH_MODE")),
+            str(raw.get("default_openviking_auth_mode", "trusted")),
+        ).strip().lower(),
+        openviking_timeout_seconds=_env_int(
+            str(raw.get("openviking_timeout_seconds_env_var", "OPENVIKING_TIMEOUT_SECONDS")),
+            int(raw.get("default_openviking_timeout_seconds", 10)),
+        ),
+        openviking_wait_for_index=_env_bool(
+            str(raw.get("openviking_wait_for_index_env_var", "OPENVIKING_WAIT_FOR_INDEX")),
+            bool(raw.get("default_openviking_wait_for_index", False)),
+        ),
+        openviking_root_uri=_env(
+            str(raw.get("openviking_root_uri_env_var", "OPENVIKING_ROOT_URI")),
+            str(raw.get("default_openviking_root_uri", "viking://~/memories")),
+        ).rstrip("/"),
+    )
+
+
 def _load_agent(raw: dict[str, Any]) -> AgentSettings:
     checkpoint_database_url = _optional_str(
         os.getenv(str(raw["langgraph_checkpoint_database_url_env_var"]))
@@ -521,6 +594,27 @@ def _validate_numeric_ranges(settings: Settings) -> None:
         raise ConfigError("postgres.connect_timeout_seconds 必须大于 0")
     if settings.postgres.pool_max_size < settings.postgres.pool_min_size:
         raise ConfigError("postgres.pool_max_size 必须大于等于 pool_min_size")
+    if settings.memory.provider not in {"native_pg", "openviking"}:
+        raise ConfigError("memory.provider 必须是 native_pg 或 openviking")
+    if settings.memory.recall_limit <= 0:
+        raise ConfigError("memory.recall_limit 必须大于 0")
+    if settings.memory.max_item_chars <= 0:
+        raise ConfigError("memory.max_item_chars 必须大于 0")
+    if not 0 <= settings.memory.auto_apply_threshold <= 1:
+        raise ConfigError("memory.auto_apply_threshold 必须在 0 到 1 之间")
+    if not 0 <= settings.memory.forget_threshold <= 1:
+        raise ConfigError("memory.forget_threshold 必须在 0 到 1 之间")
+    if settings.memory.forget_threshold < settings.memory.auto_apply_threshold:
+        raise ConfigError("memory.forget_threshold 不能低于 auto_apply_threshold")
+    if settings.memory.openviking_auth_mode not in {"trusted", "api_key", "dev"}:
+        raise ConfigError("memory.openviking_auth_mode 必须是 trusted、api_key 或 dev")
+    if settings.memory.openviking_timeout_seconds <= 0:
+        raise ConfigError("memory.openviking_timeout_seconds 必须大于 0")
+    if settings.memory.openviking_root_uri != "viking://~/memories":
+        raise ConfigError("memory.openviking_root_uri 当前必须是 viking://~/memories")
+    if settings.memory.provider == "openviking" and settings.memory.openviking_auth_mode == "api_key":
+        if not settings.memory.openviking_api_key:
+            raise ConfigError("OpenViking api_key 模式需要 OPENVIKING_API_KEY")
     if settings.agent.max_iterations <= 0:
         raise ConfigError("agent.max_iterations 必须大于 0")
     if settings.agent.max_parallel_tool_calls <= 0:

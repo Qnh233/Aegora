@@ -5,6 +5,14 @@ from typing import Any, Callable
 
 from aegora_runtime.config import Settings
 from aegora_runtime.db import connect
+from aegora_runtime.memory import (
+    TENANT_REQUIRED,
+    MemoryScope,
+    MemoryWrite,
+    build_memory_service,
+    governance_from_runtime_context,
+    write_scope_for,
+)
 from aegora_runtime.registry import LocalTool, registry as runner_registry
 from aegora_runtime.sessions import derive_user_id_from_session
 from aegora_runtime.skills import load_skill_by_name
@@ -113,7 +121,7 @@ def lookup_faq_detail_runner_tool(args: dict[str, Any], state: dict[str, Any]) -
 @runner_registry.tool(
     tool_id="save_user_memory",
     runner_tool_id="local.save_user_memory",
-    description="保存本会话偏好或稳定事实，只保存用户明确表达的信息。",
+    description="保存用户明确表达的长期偏好或稳定事实，不保存推断或敏感信息。",
     input_schema={"key": str, "value": str},
     max_retries=2,
     retry_delay_seconds=0.1,
@@ -211,22 +219,54 @@ def save_user_memory(settings: Settings, state: dict[str, Any], key: str, value:
     session_id = request_value(state, "session_id")
     if not session_id:
         return {"saved": False, "reason": "missing_session_id"}
-    user_id = derive_user_id_from_session(session_id)
-    with connect(settings) as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO user_memories (user_id, facts, updated_at)
-                VALUES (%s, jsonb_build_object(%s::text, %s::text), now())
-                ON CONFLICT (user_id)
-                DO UPDATE SET
-                    facts = user_memories.facts || jsonb_build_object(%s::text, %s::text),
-                    updated_at = now()
-                """,
-                (user_id, key, value, key, value),
-            )
-        conn.commit()
-    return {"saved": True, "key": key, "scope": "session", "session_id": session_id}
+    user_id = request_value(state, "user_id") or derive_user_id_from_session(session_id)
+    runtime_context = (state.get("context") or {}).get("runtime_context") or {}
+    agent = runtime_context.get("agent") if isinstance(runtime_context, dict) else {}
+    agent_id = str(agent.get("id")) if isinstance(agent, dict) and agent.get("id") else None
+    governance = governance_from_runtime_context(
+        runtime_context if isinstance(runtime_context, dict) else {},
+        agent_id=agent_id,
+    )
+    namespace = "preferences"
+    policy = governance.policy_for(namespace)
+    if policy.mode == TENANT_REQUIRED:
+        return {
+            "saved": False,
+            "reason": "tenant_managed_namespace",
+            "namespace": namespace,
+            "user_id": user_id,
+        }
+    memory_scope = write_scope_for(governance, namespace)
+    scope = MemoryScope(
+        user_id=user_id,
+        session_id=session_id,
+        agent_id=agent_id,
+        tenant_id=governance.tenant_id,
+        namespace=namespace,
+        memory_scope=memory_scope,
+    )
+    result = build_memory_service(settings).remember(
+        scope=scope,
+        memory=MemoryWrite(
+            key=key,
+            value=value,
+            memory_type="semantic",
+            source_agent_id=agent_id,
+            source_session_id=session_id,
+            source_trace_id=trace_id_from_state(state),
+            source_kind="explicit",
+            reason="explicit_save_user_memory",
+        ),
+    ).to_tool_result()
+    result.update(
+        {
+            "scope": memory_scope,
+            "namespace": namespace,
+            "session_id": session_id,
+            "user_id": user_id,
+        }
+    )
+    return result
 
 
 def record_handoff(settings: Settings, state: dict[str, Any], reason: str, summary: str) -> dict[str, Any]:

@@ -68,6 +68,32 @@ def ensure_schema() -> None:
             )
             cursor.execute(
                 """
+                CREATE TABLE IF NOT EXISTS memory_namespace_policies (
+                    tenant_id TEXT NOT NULL DEFAULT 'default',
+                    namespace TEXT NOT NULL,
+                    mode TEXT NOT NULL,
+                    allow_public_agents BOOLEAN NOT NULL DEFAULT FALSE,
+                    updated_by TEXT NOT NULL,
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    PRIMARY KEY (tenant_id, namespace),
+                    CHECK (mode IN ('tenant_required', 'user_controlled', 'agent_private'))
+                )
+                """
+            )
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS user_memory_preferences (
+                    tenant_id TEXT NOT NULL DEFAULT 'default',
+                    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    namespace TEXT NOT NULL,
+                    share_across_agents BOOLEAN NOT NULL DEFAULT FALSE,
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    PRIMARY KEY (tenant_id, user_id, namespace)
+                )
+                """
+            )
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS mcp_connections (
                     id TEXT PRIMARY KEY,
                     name TEXT NOT NULL,
@@ -437,6 +463,142 @@ def ensure_user_exists(user_id: str, status: str = "active") -> None:
                 """,
                 (user_id, status),
             )
+
+
+def upsert_memory_namespace_policy(
+    tenant_id: str,
+    namespace: str,
+    *,
+    mode: str,
+    allow_public_agents: bool,
+    updated_by: str,
+) -> dict[str, object]:
+    if mode not in {"tenant_required", "user_controlled", "agent_private"}:
+        raise ValueError("memory policy mode 不合法")
+    with psycopg.connect(database_url()) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO memory_namespace_policies (
+                    tenant_id,
+                    namespace,
+                    mode,
+                    allow_public_agents,
+                    updated_by,
+                    updated_at
+                )
+                VALUES (%s, %s, %s, %s, %s, now())
+                ON CONFLICT (tenant_id, namespace)
+                DO UPDATE SET
+                    mode = EXCLUDED.mode,
+                    allow_public_agents = EXCLUDED.allow_public_agents,
+                    updated_by = EXCLUDED.updated_by,
+                    updated_at = now()
+                RETURNING tenant_id, namespace, mode, allow_public_agents, updated_by, updated_at
+                """,
+                (tenant_id, namespace, mode, allow_public_agents, updated_by),
+            )
+            row = cursor.fetchone()
+    if row is None:
+        raise RuntimeError("memory namespace policy upsert failed")
+    return {
+        "tenant_id": row[0],
+        "namespace": row[1],
+        "mode": row[2],
+        "allow_public_agents": row[3],
+        "updated_by": row[4],
+        "updated_at": row[5],
+    }
+
+
+def list_memory_namespace_policies(tenant_id: str) -> list[dict[str, object]]:
+    with psycopg.connect(database_url()) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT tenant_id, namespace, mode, allow_public_agents, updated_by, updated_at
+                FROM memory_namespace_policies
+                WHERE tenant_id = %s
+                ORDER BY namespace
+                """,
+                (tenant_id,),
+            )
+            rows = cursor.fetchall()
+    return [
+        {
+            "tenant_id": row[0],
+            "namespace": row[1],
+            "mode": row[2],
+            "allow_public_agents": row[3],
+            "updated_by": row[4],
+            "updated_at": row[5],
+        }
+        for row in rows
+    ]
+
+
+def upsert_user_memory_preference(
+    tenant_id: str,
+    user_id: str,
+    namespace: str,
+    *,
+    share_across_agents: bool,
+) -> dict[str, object]:
+    with psycopg.connect(database_url()) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO user_memory_preferences (
+                    tenant_id,
+                    user_id,
+                    namespace,
+                    share_across_agents,
+                    updated_at
+                )
+                VALUES (%s, %s, %s, %s, now())
+                ON CONFLICT (tenant_id, user_id, namespace)
+                DO UPDATE SET
+                    share_across_agents = EXCLUDED.share_across_agents,
+                    updated_at = now()
+                RETURNING tenant_id, user_id, namespace, share_across_agents, updated_at
+                """,
+                (tenant_id, user_id, namespace, share_across_agents),
+            )
+            row = cursor.fetchone()
+    if row is None:
+        raise RuntimeError("user memory preference upsert failed")
+    return {
+        "tenant_id": row[0],
+        "user_id": row[1],
+        "namespace": row[2],
+        "share_across_agents": row[3],
+        "updated_at": row[4],
+    }
+
+
+def list_user_memory_preferences(tenant_id: str, user_id: str) -> list[dict[str, object]]:
+    with psycopg.connect(database_url()) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT tenant_id, user_id, namespace, share_across_agents, updated_at
+                FROM user_memory_preferences
+                WHERE tenant_id = %s AND user_id = %s
+                ORDER BY namespace
+                """,
+                (tenant_id, user_id),
+            )
+            rows = cursor.fetchall()
+    return [
+        {
+            "tenant_id": row[0],
+            "user_id": row[1],
+            "namespace": row[2],
+            "share_across_agents": row[3],
+            "updated_at": row[4],
+        }
+        for row in rows
+    ]
 
 
 def compute_tool_manifest_hash(tool: ToolDefinition) -> str:

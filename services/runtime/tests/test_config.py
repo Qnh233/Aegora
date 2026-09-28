@@ -42,6 +42,19 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(settings.retrieval.rrf_tie_break_source, "vector")
         self.assertEqual(settings.retrieval.candidate_k, 5)
         self.assertTrue(settings.skills.enabled)
+        self.assertFalse(settings.memory.recall_enabled)
+        self.assertEqual(settings.memory.provider, "native_pg")
+        self.assertEqual(settings.memory.recall_limit, 8)
+        self.assertEqual(settings.memory.max_item_chars, 400)
+        self.assertFalse(settings.memory.extraction_enabled)
+        self.assertEqual(settings.memory.auto_apply_threshold, 0.9)
+        self.assertEqual(settings.memory.forget_threshold, 0.98)
+        self.assertEqual(settings.memory.openviking_base_url, "http://127.0.0.1:1933")
+        self.assertIsNone(settings.memory.openviking_api_key)
+        self.assertEqual(settings.memory.openviking_auth_mode, "trusted")
+        self.assertEqual(settings.memory.openviking_timeout_seconds, 10)
+        self.assertFalse(settings.memory.openviking_wait_for_index)
+        self.assertEqual(settings.memory.openviking_root_uri, "viking://~/memories")
         self.assertEqual(settings.skills.max_injected, 1)
         self.assertEqual(settings.skills.max_content_chars, 1000)
         self.assertEqual(settings.database.embedding_dim, 1024)
@@ -88,6 +101,19 @@ class ConfigTest(unittest.TestCase):
             "AGENT_LOOP_MODE": "planner",
             "AGENT_ENABLE_LLM_SELF_CHECK": "true",
             "AGENT_MAX_PARALLEL_TOOL_CALLS": "2",
+            "MEMORY_RECALL_ENABLED": "true",
+            "MEMORY_PROVIDER": "native_pg",
+            "MEMORY_RECALL_LIMIT": "5",
+            "MEMORY_MAX_ITEM_CHARS": "240",
+            "MEMORY_EXTRACTION_ENABLED": "true",
+            "MEMORY_AUTO_APPLY_THRESHOLD": "0.93",
+            "MEMORY_FORGET_THRESHOLD": "0.99",
+            "OPENVIKING_BASE_URL": "http://openviking.internal:1933/",
+            "OPENVIKING_API_KEY": "ov-test",
+            "OPENVIKING_AUTH_MODE": "trusted",
+            "OPENVIKING_TIMEOUT_SECONDS": "17",
+            "OPENVIKING_WAIT_FOR_INDEX": "true",
+            "OPENVIKING_ROOT_URI": "viking://~/memories/",
             "POCOFLOW_DB_ENABLED": "false",
             "FILE_LOG_ENABLED": "false",
             "TOOL_LOG_DB_ENABLED": "false",
@@ -118,6 +144,19 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(settings.agent.loop_mode, "planner")
         self.assertTrue(settings.agent.enable_llm_self_check)
         self.assertEqual(settings.agent.max_parallel_tool_calls, 2)
+        self.assertTrue(settings.memory.recall_enabled)
+        self.assertEqual(settings.memory.provider, "native_pg")
+        self.assertEqual(settings.memory.recall_limit, 5)
+        self.assertEqual(settings.memory.max_item_chars, 240)
+        self.assertTrue(settings.memory.extraction_enabled)
+        self.assertEqual(settings.memory.auto_apply_threshold, 0.93)
+        self.assertEqual(settings.memory.forget_threshold, 0.99)
+        self.assertEqual(settings.memory.openviking_base_url, "http://openviking.internal:1933")
+        self.assertEqual(settings.memory.openviking_api_key, "ov-test")
+        self.assertEqual(settings.memory.openviking_auth_mode, "trusted")
+        self.assertEqual(settings.memory.openviking_timeout_seconds, 17)
+        self.assertTrue(settings.memory.openviking_wait_for_index)
+        self.assertEqual(settings.memory.openviking_root_uri, "viking://~/memories")
         self.assertFalse(settings.observability.pocoflow_db_enabled)
         self.assertFalse(settings.observability.file_log_enabled)
         self.assertFalse(settings.observability.tool_log_db_enabled)
@@ -154,7 +193,14 @@ class ConfigTest(unittest.TestCase):
         )
         self.assertNotIn("skills_content", [item.name for item in registry.postgres()])
         self.assertNotIn("chat_messages", [item.name for item in registry.postgres()])
+        postgres_names = [item.name for item in registry.postgres()]
+        self.assertIn("memory_items", postgres_names)
+        self.assertIn("memory_candidates", postgres_names)
+        self.assertIn("memory_events", postgres_names)
+        self.assertIn("memory_extraction_messages", postgres_names)
+        self.assertIn("procedural_memories", postgres_names)
         self.assertIn("message_feedback", [item.name for item in registry.runtime()])
+        self.assertNotIn("memory_candidates", [item.name for item in registry.runtime()])
         self.assertIn("faq_content", [item.name for item in registry.needs_embedding()])
 
     def test_rejects_invalid_collection_owner(self) -> None:
@@ -168,6 +214,15 @@ class ConfigTest(unittest.TestCase):
             with patch.dict(os.environ, {}, clear=True):
                 with self.assertRaises(ConfigError):
                     load_settings(config_path, env_path=None)
+
+    def test_openviking_api_key_mode_requires_key_when_selected(self) -> None:
+        env = {
+            "MEMORY_PROVIDER": "openviking",
+            "OPENVIKING_AUTH_MODE": "api_key",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(ConfigError):
+                load_settings(CONFIG_PATH, env_path=None)
 
     def test_dotenv_does_not_override_process_env(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
