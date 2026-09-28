@@ -44,6 +44,10 @@ from .models import (
     AuthorizeResponse,
     LoginRequest,
     LoginResponse,
+    MemoryNamespacePolicyRequest,
+    MemoryNamespacePolicyResponse,
+    MemorySharingPreferenceRequest,
+    MemorySharingPreferenceResponse,
     MCPConnectionDefinition,
     MCPDiscoveryResponse,
     MCPConnectionRequest,
@@ -888,6 +892,105 @@ def list_admin_users(authorization: str | None = Header(default=None)) -> list[A
         db.ensure_schema()
         require_current_platform_admin(authorization)
         return db.fetch_users_with_roles()
+    except HTTPException:
+        raise
+    except (psycopg.Error, RuntimeError) as error:
+        raise HTTPException(status_code=503, detail="数据库不可用或未配置") from error
+
+
+@app.get(
+    "/admin/memory-policies/{tenant_id}",
+    response_model=list[MemoryNamespacePolicyResponse],
+)
+def list_memory_policies(
+    tenant_id: str,
+    authorization: str | None = Header(default=None),
+) -> list[MemoryNamespacePolicyResponse]:
+    try:
+        db.ensure_schema()
+        require_current_platform_admin(authorization)
+        return [
+            MemoryNamespacePolicyResponse(**item)
+            for item in db.list_memory_namespace_policies(tenant_id)
+        ]
+    except HTTPException:
+        raise
+    except (psycopg.Error, RuntimeError) as error:
+        raise HTTPException(status_code=503, detail="数据库不可用或未配置") from error
+
+
+@app.put(
+    "/admin/memory-policies/{tenant_id}/{namespace}",
+    response_model=MemoryNamespacePolicyResponse,
+)
+def set_memory_policy(
+    tenant_id: str,
+    namespace: str,
+    request: MemoryNamespacePolicyRequest,
+    authorization: str | None = Header(default=None),
+) -> MemoryNamespacePolicyResponse:
+    try:
+        db.ensure_schema()
+        actor_id = require_current_platform_admin(authorization)
+        item = db.upsert_memory_namespace_policy(
+            tenant_id,
+            namespace,
+            mode=request.mode,
+            allow_public_agents=request.allow_public_agents,
+            updated_by=actor_id,
+        )
+        return MemoryNamespacePolicyResponse(**item)
+    except HTTPException:
+        raise
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except (psycopg.Error, RuntimeError) as error:
+        raise HTTPException(status_code=503, detail="数据库不可用或未配置") from error
+
+
+@app.get(
+    "/users/{user_id}/memory-preferences/{tenant_id}",
+    response_model=list[MemorySharingPreferenceResponse],
+)
+def list_memory_preferences(
+    user_id: str,
+    tenant_id: str,
+    authorization: str | None = Header(default=None),
+) -> list[MemorySharingPreferenceResponse]:
+    try:
+        db.ensure_schema()
+        require_current_actor(authorization, user_id)
+        return [
+            MemorySharingPreferenceResponse(**item)
+            for item in db.list_user_memory_preferences(tenant_id, user_id)
+        ]
+    except HTTPException:
+        raise
+    except (psycopg.Error, RuntimeError) as error:
+        raise HTTPException(status_code=503, detail="数据库不可用或未配置") from error
+
+
+@app.put(
+    "/users/{user_id}/memory-preferences/{tenant_id}/{namespace}",
+    response_model=MemorySharingPreferenceResponse,
+)
+def set_memory_preference(
+    user_id: str,
+    tenant_id: str,
+    namespace: str,
+    request: MemorySharingPreferenceRequest,
+    authorization: str | None = Header(default=None),
+) -> MemorySharingPreferenceResponse:
+    try:
+        db.ensure_schema()
+        require_current_actor(authorization, user_id)
+        item = db.upsert_user_memory_preference(
+            tenant_id,
+            user_id,
+            namespace,
+            share_across_agents=request.share_across_agents,
+        )
+        return MemorySharingPreferenceResponse(**item)
     except HTTPException:
         raise
     except (psycopg.Error, RuntimeError) as error:

@@ -162,7 +162,37 @@ description = "回答反馈，运行时通过 Strapi API 写入 MySQL。"
 owner = "postgres"
 pg_table = "user_memories"
 runtime = true
-description = "会话级偏好，暂时复用 user_memories 兼容表。"
+description = "旧版用户记忆兼容表，仅用于平滑迁移。"
+
+[collections.memory_items]
+owner = "postgres"
+pg_table = "memory_items"
+runtime = true
+description = "长期记忆权威表：支持多 Agent scope、namespace、provenance 和版本化。"
+
+[collections.memory_candidates]
+owner = "postgres"
+pg_table = "memory_candidates"
+runtime = false
+description = "后台记忆提取候选队列；只有通过 Aegora governance 后才允许写入权威 memory_items。"
+
+[collections.memory_events]
+owner = "postgres"
+pg_table = "memory_events"
+runtime = false
+description = "记忆创建、更新、遗忘、过期和候选决策审计事件。"
+
+[collections.memory_extraction_messages]
+owner = "postgres"
+pg_table = "memory_extraction_messages"
+runtime = false
+description = "后台提取任务的 trace 级幂等状态与失败重试记录。"
+
+[collections.procedural_memories]
+owner = "postgres"
+pg_table = "procedural_memories"
+runtime = false
+description = "P6 Agent 级程序性记忆：聚合成功轨迹、正负反馈和 Memory provenance，作为 Skill Draft 晋级前的治理候选。"
 
 [collections.tool_logs]
 owner = "postgres"
@@ -185,6 +215,23 @@ recall_limit_env_var = "MEMORY_RECALL_LIMIT"
 default_recall_limit = 8
 max_item_chars_env_var = "MEMORY_MAX_ITEM_CHARS"
 default_max_item_chars = 400
+extraction_enabled_env_var = "MEMORY_EXTRACTION_ENABLED"
+default_extraction_enabled = false
+auto_apply_threshold_env_var = "MEMORY_AUTO_APPLY_THRESHOLD"
+default_auto_apply_threshold = 0.90
+forget_threshold_env_var = "MEMORY_FORGET_THRESHOLD"
+default_forget_threshold = 0.98
+openviking_base_url_env_var = "OPENVIKING_BASE_URL"
+default_openviking_base_url = "http://127.0.0.1:1933"
+openviking_api_key_env_var = "OPENVIKING_API_KEY"
+openviking_auth_mode_env_var = "OPENVIKING_AUTH_MODE"
+default_openviking_auth_mode = "trusted"
+openviking_timeout_seconds_env_var = "OPENVIKING_TIMEOUT_SECONDS"
+default_openviking_timeout_seconds = 10
+openviking_wait_for_index_env_var = "OPENVIKING_WAIT_FOR_INDEX"
+default_openviking_wait_for_index = false
+openviking_root_uri_env_var = "OPENVIKING_ROOT_URI"
+default_openviking_root_uri = "viking://~/memories"
 
 [agent]
 loop_mode_env_var = "AGENT_LOOP_MODE"

@@ -56,6 +56,9 @@ def sync_skill_rows(rows: list[dict[str, Any]], settings) -> int:
     ]
     if errors:
         raise ValueError("\n".join(errors))
+    live_errors = procedural_skill_state_errors(normalized, settings)
+    if live_errors:
+        raise ValueError("\n".join(live_errors))
     with connect(settings) as conn:
         with conn.cursor() as cur:
             for row in normalized:
@@ -99,6 +102,71 @@ def sync_skill_rows(rows: list[dict[str, Any]], settings) -> int:
                 ensure_embedding_row(cur, skill["id"], skill["version"], skill["content_hash"], settings)
         conn.commit()
     return len(normalized)
+
+
+def procedural_skill_state_errors(
+    rows: list[dict[str, Any]],
+    settings,
+) -> list[str]:
+    candidates = [
+        row
+        for row in rows
+        if row.get("status") == "active"
+        and row.get("source") == "agent"
+        and isinstance(row.get("metadata"), dict)
+        and row["metadata"].get("source_kind") == "procedural_memory"
+    ]
+    if not candidates:
+        return []
+
+    ids = [
+        int(row["metadata"]["procedural_memory_id"])
+        for row in candidates
+        if isinstance(row["metadata"].get("procedural_memory_id"), int)
+    ]
+    if not ids:
+        return ["procedural active Skill 缺少可查询的 procedural_memory_id"]
+
+    with connect(settings) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    id,
+                    agent_id,
+                    fingerprint,
+                    status,
+                    promoted_skill_name
+                FROM procedural_memories
+                WHERE id = ANY(%s)
+                """,
+                (ids,),
+            )
+            states = {int(row["id"]): dict(row) for row in cur.fetchall()}
+
+    errors: list[str] = []
+    for row in candidates:
+        metadata = row["metadata"]
+        memory_id = metadata.get("procedural_memory_id")
+        if not isinstance(memory_id, int):
+            errors.append(f"{row.get('name')}: procedural_memory_id 无效")
+            continue
+        state = states.get(memory_id)
+        if state is None:
+            errors.append(f"{row.get('name')}: procedural memory {memory_id} 不存在")
+            continue
+        if state.get("status") != "skill_drafted":
+            errors.append(
+                f"{row.get('name')}: procedural memory 当前状态为 {state.get('status')}，禁止晋级 active"
+            )
+        if str(state.get("fingerprint") or "") != str(metadata.get("procedural_fingerprint") or ""):
+            errors.append(f"{row.get('name')}: procedural fingerprint 与当前治理事实不一致")
+        if str(state.get("agent_id") or "") != str(metadata.get("source_agent_id") or ""):
+            errors.append(f"{row.get('name')}: procedural source_agent_id 与当前治理事实不一致")
+        promoted_name = str(state.get("promoted_skill_name") or "").strip()
+        if promoted_name and promoted_name != str(row.get("name") or ""):
+            errors.append(f"{row.get('name')}: procedural memory 已绑定其他 Skill {promoted_name}")
+    return errors
 
 
 def normalize_strapi_skill(row: dict[str, Any]) -> dict[str, Any]:

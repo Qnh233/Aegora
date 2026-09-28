@@ -15,7 +15,7 @@ from aegora_runtime.execution_engine import ensure_trace_id, get_execution_engin
 from aegora_runtime.config import Settings, load_settings
 from aegora_runtime.deepseek import ChatMessage, DeepSeekClient, DeepSeekError
 from aegora_runtime.local_aicoin_tools import build_aicoin_tool_runtime, write_tool_log
-from aegora_runtime.memory import MemoryScope, build_memory_service
+from aegora_runtime.memory import MemoryScope, build_memory_service, governance_from_runtime_context
 from aegora_runtime.real_agent import LazyBgeM3Encoder, search_faq_tool
 from aegora_runtime.runtime_cache import get_runtime_config_cache
 from aegora_runtime.runtime_approvals import (
@@ -320,17 +320,20 @@ def load_configured_context(
     user_id = str(getattr(request, "user_id", "") or "").strip()
     if user_id:
         agent = runtime_context.get("agent") if isinstance(runtime_context.get("agent"), dict) else {}
+        governance = governance_from_runtime_context(runtime_context)
         scope = MemoryScope(
             user_id=user_id,
             session_id=str(getattr(request, "session_id", "") or "") or None,
-            agent_id=str(agent.get("id")) if agent.get("id") else None,
-            namespace="user",
+            agent_id=str(agent.get("id")) if agent.get("id") else governance.agent_id,
+            tenant_id=governance.tenant_id,
+            namespace="preferences",
         )
         memory_items = [
             item.to_prompt_dict()
             for item in build_memory_service(active_settings).recall(
                 scope=scope,
                 query=str(getattr(request, "query", "") or ""),
+                governance=governance,
             )
         ]
 

@@ -97,7 +97,7 @@ def agent_skill_promotion_errors(skill: dict[str, Any], reviewer: str | None = N
     if not isinstance(evaluation, dict):
         return ["agent Skill 晋级前必须提供 metadata.evaluation 对象"]
 
-    errors = []
+    errors = procedural_skill_lineage_errors(metadata)
     if evaluation.get("status") != "passed":
         errors.append("agent Skill 晋级前必须通过评测（metadata.evaluation.status=passed）")
     if not isinstance(evaluation.get("dataset"), str) or not evaluation["dataset"].strip():
@@ -145,6 +145,51 @@ def agent_skill_promotion_errors(skill: dict[str, Any], reviewer: str | None = N
     reviewer_name = reviewer if reviewer is not None else skill.get("reviewed_by")
     if not isinstance(reviewer_name, str) or not reviewer_name.strip():
         errors.append("agent Skill 晋级前必须记录明确的人工审核者 reviewed_by")
+    return errors
+
+
+def procedural_skill_lineage_errors(metadata: dict[str, Any]) -> list[str]:
+    if metadata.get("source_kind") != "procedural_memory":
+        return []
+
+    errors: list[str] = []
+    memory_id = metadata.get("procedural_memory_id")
+    if not isinstance(memory_id, int) or memory_id <= 0:
+        errors.append("procedural Skill 必须记录有效 procedural_memory_id")
+    fingerprint = metadata.get("procedural_fingerprint")
+    if not isinstance(fingerprint, str) or not fingerprint.strip():
+        errors.append("procedural Skill 必须记录 procedural_fingerprint")
+    source_agent_id = metadata.get("source_agent_id")
+    if not isinstance(source_agent_id, str) or not source_agent_id.strip() or source_agent_id == "legacy":
+        errors.append("procedural Skill 必须记录明确 source_agent_id")
+
+    source_traces = metadata.get("source_trace_ids")
+    positive_traces = metadata.get("positive_trace_ids")
+    if not isinstance(source_traces, list) or len({str(value) for value in source_traces if str(value)}) < 2:
+        errors.append("procedural Skill 必须保留至少两条 source_trace_ids")
+    if not isinstance(positive_traces, list) or not positive_traces:
+        errors.append("procedural Skill 必须保留 positive_trace_ids")
+    elif isinstance(source_traces, list) and not set(map(str, positive_traces)).issubset(set(map(str, source_traces))):
+        errors.append("procedural Skill positive_trace_ids 必须属于 source_trace_ids")
+
+    evidence = metadata.get("procedural_evidence")
+    if not isinstance(evidence, dict):
+        errors.append("procedural Skill 必须记录 procedural_evidence")
+        return errors
+    evidence_count = evidence.get("evidence_count")
+    positive_count = evidence.get("positive_count")
+    negative_count = evidence.get("negative_count")
+    negative_ratio = evidence.get("negative_ratio")
+    if not isinstance(evidence_count, int) or evidence_count < 2:
+        errors.append("procedural_evidence.evidence_count 必须至少为 2")
+    if not isinstance(positive_count, int) or positive_count < 1:
+        errors.append("procedural_evidence.positive_count 必须至少为 1")
+    if not isinstance(negative_count, int) or negative_count < 0:
+        errors.append("procedural_evidence.negative_count 无效")
+    if not isinstance(negative_ratio, (int, float)) or not 0 <= float(negative_ratio) <= 1:
+        errors.append("procedural_evidence.negative_ratio 必须在 0 到 1")
+    if evidence.get("promotion_reason") != "promotion_gate_passed":
+        errors.append("procedural Skill 必须来自通过 promotion gate 的程序性记忆")
     return errors
 
 

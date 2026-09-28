@@ -5,7 +5,14 @@ from typing import Any, Callable
 
 from aegora_runtime.config import Settings
 from aegora_runtime.db import connect
-from aegora_runtime.memory import MemoryScope, MemoryWrite, build_memory_service
+from aegora_runtime.memory import (
+    TENANT_REQUIRED,
+    MemoryScope,
+    MemoryWrite,
+    build_memory_service,
+    governance_from_runtime_context,
+    write_scope_for,
+)
 from aegora_runtime.registry import LocalTool, registry as runner_registry
 from aegora_runtime.sessions import derive_user_id_from_session
 from aegora_runtime.skills import load_skill_by_name
@@ -216,17 +223,49 @@ def save_user_memory(settings: Settings, state: dict[str, Any], key: str, value:
     runtime_context = (state.get("context") or {}).get("runtime_context") or {}
     agent = runtime_context.get("agent") if isinstance(runtime_context, dict) else {}
     agent_id = str(agent.get("id")) if isinstance(agent, dict) and agent.get("id") else None
+    governance = governance_from_runtime_context(
+        runtime_context if isinstance(runtime_context, dict) else {},
+        agent_id=agent_id,
+    )
+    namespace = "preferences"
+    policy = governance.policy_for(namespace)
+    if policy.mode == TENANT_REQUIRED:
+        return {
+            "saved": False,
+            "reason": "tenant_managed_namespace",
+            "namespace": namespace,
+            "user_id": user_id,
+        }
+    memory_scope = write_scope_for(governance, namespace)
     scope = MemoryScope(
         user_id=user_id,
         session_id=session_id,
         agent_id=agent_id,
-        namespace="user",
+        tenant_id=governance.tenant_id,
+        namespace=namespace,
+        memory_scope=memory_scope,
     )
     result = build_memory_service(settings).remember(
         scope=scope,
-        memory=MemoryWrite(key=key, value=value, memory_type="semantic"),
+        memory=MemoryWrite(
+            key=key,
+            value=value,
+            memory_type="semantic",
+            source_agent_id=agent_id,
+            source_session_id=session_id,
+            source_trace_id=trace_id_from_state(state),
+            source_kind="explicit",
+            reason="explicit_save_user_memory",
+        ),
     ).to_tool_result()
-    result.update({"scope": "user", "session_id": session_id, "user_id": user_id})
+    result.update(
+        {
+            "scope": memory_scope,
+            "namespace": namespace,
+            "session_id": session_id,
+            "user_id": user_id,
+        }
+    )
     return result
 
 

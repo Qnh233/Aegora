@@ -10,6 +10,7 @@ from typing import Any
 from aegora_runtime.config import Settings, load_settings
 from aegora_runtime.data_ops.embedding_jobs import embed_pending
 from aegora_runtime.data_ops.locks import advisory_job_lock
+from aegora_runtime.data_ops.memory_extraction import run_memory_extraction
 from aegora_runtime.data_ops.reflection_flow import run_weekly_reflection
 from aegora_runtime.data_ops.reports import DataOpsReport, save_report
 from aegora_runtime.data_ops.scheduler import DataOpsScheduler, scheduled_job
@@ -39,6 +40,38 @@ def main() -> None:
     reflect_cmd.add_argument("--no-write-skill-drafts", action="store_false", dest="write_skill_drafts")
     reflect_cmd.add_argument("--min-cluster-size", type=int, default=env_int("DATA_OPS_MIN_CLUSTER_SIZE", 3))
     reflect_cmd.add_argument("--min-negative-feedback", type=int, default=env_int("DATA_OPS_MIN_NEGATIVE_FEEDBACK", 1))
+    reflect_cmd.add_argument(
+        "--enable-procedural-learning",
+        action="store_true",
+        default=env_bool("DATA_OPS_PROCEDURAL_ENABLED", False),
+    )
+    reflect_cmd.add_argument(
+        "--disable-procedural-learning",
+        action="store_false",
+        dest="enable_procedural_learning",
+    )
+    reflect_cmd.add_argument(
+        "--procedural-min-occurrences",
+        type=int,
+        default=env_int("DATA_OPS_PROCEDURAL_MIN_OCCURRENCES", 3),
+    )
+    reflect_cmd.add_argument(
+        "--procedural-min-positive-feedback",
+        type=int,
+        default=env_int("DATA_OPS_PROCEDURAL_MIN_POSITIVE_FEEDBACK", 2),
+    )
+    reflect_cmd.add_argument(
+        "--procedural-max-negative-ratio",
+        type=float,
+        default=float(os.environ.get("DATA_OPS_PROCEDURAL_MAX_NEGATIVE_RATIO", "0.0")),
+    )
+
+    memory_cmd = sub.add_parser("extract-memory", help="Extract governed long-term memory candidates from recent user turns.")
+    memory_cmd.add_argument("--hours", type=int, default=env_int("DATA_OPS_MEMORY_WINDOW_HOURS", 24))
+    memory_cmd.add_argument("--limit", type=int, default=env_int("DATA_OPS_MEMORY_MAX_MESSAGES", 200))
+    memory_cmd.add_argument("--dry-run", action="store_true")
+    memory_cmd.add_argument("--no-auto-apply", action="store_false", dest="auto_apply", default=True)
+    memory_cmd.add_argument("--force", action="store_true", help="Run even when MEMORY_EXTRACTION_ENABLED=false.")
 
     sub.add_parser("scheduler", help="Run internal scheduler loop.")
     args = parser.parse_args()
@@ -58,6 +91,19 @@ def main() -> None:
             write_skill_drafts=args.write_skill_drafts,
             min_cluster_size=args.min_cluster_size,
             min_negative_feedback=args.min_negative_feedback,
+            procedural_enabled=args.enable_procedural_learning,
+            procedural_min_occurrences=args.procedural_min_occurrences,
+            procedural_min_positive_feedback=args.procedural_min_positive_feedback,
+            procedural_max_negative_ratio=args.procedural_max_negative_ratio,
+        )
+    elif args.command == "extract-memory":
+        run_memory_job(
+            settings,
+            hours=args.hours,
+            limit=args.limit,
+            dry_run=args.dry_run,
+            auto_apply=args.auto_apply,
+            force=args.force,
         )
     elif args.command == "scheduler":
         run_scheduler(settings)
@@ -95,6 +141,10 @@ def run_reflection(
     write_skill_drafts: bool,
     min_cluster_size: int,
     min_negative_feedback: int,
+    procedural_enabled: bool = False,
+    procedural_min_occurrences: int = 3,
+    procedural_min_positive_feedback: int = 2,
+    procedural_max_negative_ratio: float = 0.0,
 ) -> DataOpsReport:
     def task() -> dict[str, Any]:
         result = run_weekly_reflection(
@@ -104,6 +154,10 @@ def run_reflection(
             write_drafts=write_skill_drafts,
             min_cluster_size=min_cluster_size,
             min_negative_feedback=min_negative_feedback,
+            procedural_enabled=procedural_enabled,
+            procedural_min_occurrences=procedural_min_occurrences,
+            procedural_min_positive_feedback=procedural_min_positive_feedback,
+            procedural_max_negative_ratio=procedural_max_negative_ratio,
         )
         return {
             "metrics": result.metrics,
@@ -118,6 +172,42 @@ def run_reflection(
         "weekly_reflection",
         task,
         summary_prefix=f"weekly-reflection days={days} dry_run={dry_run}",
+    )
+
+
+def run_memory_job(
+    settings: Settings,
+    *,
+    hours: int,
+    limit: int,
+    dry_run: bool,
+    auto_apply: bool,
+    force: bool = False,
+) -> DataOpsReport:
+    def task() -> dict[str, Any]:
+        result = run_memory_extraction(
+            settings,
+            hours=hours,
+            limit=limit,
+            dry_run=dry_run,
+            auto_apply=auto_apply,
+            force=force,
+        )
+        return {
+            "metrics": result.metrics,
+            "items": result.items,
+            "period_start": result.period_start,
+            "period_end": result.period_end,
+        }
+
+    return run_reported_job(
+        settings,
+        "memory_extraction",
+        task,
+        summary_prefix=(
+            f"extract-memory hours={hours} limit={limit} "
+            f"dry_run={dry_run} auto_apply={auto_apply}"
+        ),
     )
 
 
@@ -190,10 +280,22 @@ def run_scheduler(settings: Settings) -> None:
     sync_minutes = env_int("DATA_OPS_SYNC_INTERVAL_MINUTES", 60)
     embed_minutes = env_int("DATA_OPS_EMBED_INTERVAL_MINUTES", 60)
     reflection_hours = env_int("DATA_OPS_REFLECTION_INTERVAL_HOURS", 168)
+    memory_minutes = env_int("DATA_OPS_MEMORY_INTERVAL_MINUTES", 15)
     scheduler = DataOpsScheduler(
         [
             scheduled_job("sync_content", sync_minutes * 60, lambda: run_sync_content(settings, "all")),
             scheduled_job("embed_pending", embed_minutes * 60, lambda: run_embed_pending(settings, "all")),
+            scheduled_job(
+                "memory_extraction",
+                memory_minutes * 60,
+                lambda: run_memory_job(
+                    settings,
+                    hours=env_int("DATA_OPS_MEMORY_WINDOW_HOURS", 24),
+                    limit=env_int("DATA_OPS_MEMORY_MAX_MESSAGES", 200),
+                    dry_run=env_bool("DATA_OPS_MEMORY_DRY_RUN", False),
+                    auto_apply=env_bool("DATA_OPS_MEMORY_AUTO_APPLY", True),
+                ),
+            ),
             scheduled_job(
                 "weekly_reflection",
                 reflection_hours * 3600,
@@ -204,6 +306,14 @@ def run_scheduler(settings: Settings) -> None:
                     write_skill_drafts=env_bool("DATA_OPS_WRITE_SKILL_DRAFTS", True),
                     min_cluster_size=env_int("DATA_OPS_MIN_CLUSTER_SIZE", 3),
                     min_negative_feedback=env_int("DATA_OPS_MIN_NEGATIVE_FEEDBACK", 1),
+                    procedural_enabled=env_bool("DATA_OPS_PROCEDURAL_ENABLED", False),
+                    procedural_min_occurrences=env_int("DATA_OPS_PROCEDURAL_MIN_OCCURRENCES", 3),
+                    procedural_min_positive_feedback=env_int(
+                        "DATA_OPS_PROCEDURAL_MIN_POSITIVE_FEEDBACK", 2
+                    ),
+                    procedural_max_negative_ratio=float(
+                        os.environ.get("DATA_OPS_PROCEDURAL_MAX_NEGATIVE_RATIO", "0.0")
+                    ),
                 ),
             ),
         ],
@@ -217,6 +327,7 @@ def run_scheduler(settings: Settings) -> None:
         sync_minutes=sync_minutes,
         embed_minutes=embed_minutes,
         reflection_hours=reflection_hours,
+        memory_minutes=memory_minutes,
     )
     scheduler.run_forever()
 

@@ -19,6 +19,32 @@ class UserRequest(BaseModel):
     status: str = "active"
 
 
+class MemoryNamespacePolicyRequest(BaseModel):
+    mode: str = Field(pattern="^(tenant_required|user_controlled|agent_private)$")
+    allow_public_agents: bool = False
+
+
+class MemoryNamespacePolicyResponse(BaseModel):
+    tenant_id: str
+    namespace: str
+    mode: str
+    allow_public_agents: bool
+    updated_by: str
+    updated_at: datetime | None = None
+
+
+class MemorySharingPreferenceRequest(BaseModel):
+    share_across_agents: bool
+
+
+class MemorySharingPreferenceResponse(BaseModel):
+    tenant_id: str
+    user_id: str
+    namespace: str
+    share_across_agents: bool
+    updated_at: datetime | None = None
+
+
 class LoginRequest(BaseModel):
     user_id: str = Field(min_length=1, max_length=100)
 

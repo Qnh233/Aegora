@@ -173,7 +173,7 @@ def test_configured_context_loads_session_and_session_user_views(monkeypatch) ->
 
 def test_configured_context_injects_long_term_memory(monkeypatch) -> None:
     class FakeMemoryService:
-        def recall(self, *, scope, query):
+        def recall(self, *, scope, query, governance=None):
             assert scope.user_id == "u-1"
             assert scope.session_id == "session-new"
             assert scope.agent_id == "agent_1"
@@ -226,6 +226,11 @@ def test_configured_context_injects_long_term_memory(monkeypatch) -> None:
             "type": "semantic",
             "key": "preferred_language",
             "content": "Python",
+            "scope": "user_global",
+            "namespace": "preferences",
+            "version": 1,
+            "source_agent_id": None,
+            "source_kind": "legacy",
             "metadata": {},
         }
     ]

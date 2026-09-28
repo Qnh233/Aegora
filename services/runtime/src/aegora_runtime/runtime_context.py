@@ -361,6 +361,68 @@ def _release_config_json(
     return config_json
 
 
+def fetch_memory_governance(
+    actor_id: str | None,
+    *,
+    agent_visibility: str,
+) -> dict[str, object]:
+    tenant_id = os.getenv("AEGORA_TENANT_ID", "default").strip() or "default"
+    result: dict[str, object] = {
+        "tenant_id": tenant_id,
+        "agent_visibility": agent_visibility,
+        "namespace_policies": {},
+        "user_preferences": {},
+        "policy_available": False,
+    }
+    if not actor_id:
+        return result
+
+    try:
+        with connect_agent_platform() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT to_regclass('public.memory_namespace_policies') AS policies_table,
+                           to_regclass('public.user_memory_preferences') AS preferences_table
+                    """
+                )
+                tables = cur.fetchone() or {}
+                if tables.get("policies_table"):
+                    cur.execute(
+                        """
+                        SELECT namespace, mode, allow_public_agents
+                        FROM memory_namespace_policies
+                        WHERE tenant_id = %s
+                        """,
+                        (tenant_id,),
+                    )
+                    result["namespace_policies"] = {
+                        str(row["namespace"]): {
+                            "mode": str(row["mode"]),
+                            "allow_public_agents": bool(row["allow_public_agents"]),
+                        }
+                        for row in cur.fetchall()
+                    }
+                if tables.get("preferences_table"):
+                    cur.execute(
+                        """
+                        SELECT namespace, share_across_agents
+                        FROM user_memory_preferences
+                        WHERE tenant_id = %s AND user_id = %s
+                        """,
+                        (tenant_id, actor_id),
+                    )
+                    result["user_preferences"] = {
+                        str(row["namespace"]): bool(row["share_across_agents"])
+                        for row in cur.fetchall()
+                    }
+                result["policy_available"] = bool(tables.get("policies_table"))
+    except Exception:
+        # Governance lookup failure must not widen memory access.
+        return result
+    return result
+
+
 def build_runtime_context(
     release: dict[str, object],
     actor_id: str | None = None,
@@ -406,6 +468,11 @@ def build_runtime_context(
         str(tool["tool_id"]): normalize_scope(tool.get("scope") if isinstance(tool.get("scope"), dict) else None)
         for tool in active_tool_configs
     }
+    agent_visibility = str(release.get("visibility") or agent_config.get("visibility") or "private")
+    memory_governance = fetch_memory_governance(
+        actor_id,
+        agent_visibility=agent_visibility,
+    )
 
     return {
         "release": {
@@ -413,7 +480,7 @@ def build_runtime_context(
             "agent_id": release["agent_id"],
             "version": release["version"],
             "status": release["status"],
-            "visibility": release.get("visibility") or agent_config.get("visibility") or "private",
+            "visibility": agent_visibility,
         },
         "agent": {
             "id": agent_config.get("id"),
@@ -424,6 +491,7 @@ def build_runtime_context(
             "model": agent_config.get("model"),
             "enabled": bool(agent_config.get("enabled", True)),
             "channels": list(agent_config.get("channels") or []),
+            "visibility": agent_visibility,
         },
         "actor": {"actor_id": actor_id},
         "channel": channel,
@@ -432,6 +500,7 @@ def build_runtime_context(
         "tool_scopes": tool_scopes,
         "permission_snapshot": permission_snapshot,
         "learning_policy": learning_policy,
+        "memory_governance": memory_governance,
         "policy": {
             "source": "agent_release",
             "disabled_tools_filtered": sorted(released_tool_ids - active_ids),
